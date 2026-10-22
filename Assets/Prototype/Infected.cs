@@ -33,7 +33,7 @@ namespace IrkutskPrototype
             if(sees) { destination=target; alertUntil=Time.time+6; }
             bool alert=Time.time<alertUntil;
             if(distance<(game.IsDriving?2.6f:1.35f) && (sees || game.IsDriving))
-            { if(Time.time>=biteAt) { game.Damage(game.IsDriving?7:12); biteAt=Time.time+1; } return; }
+            { if(Time.time>=biteAt) { game.Damage(game.IsDriving?7:12,!game.IsDriving); biteAt=Time.time+1; } return; }
             if(!alert && Time.time>idleAt)
             { destination=home+new Vector3(Mathf.Sin(Time.time*.5f+home.x)*3,0,Mathf.Cos(Time.time*.4f+home.z)*3); idleAt=Time.time+4; }
             Vector3 direction=destination-transform.position; direction.y=0;

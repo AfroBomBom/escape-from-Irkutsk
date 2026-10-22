@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 
 namespace IrkutskPrototype
 {
-    public sealed class EscapeGame : MonoBehaviour
+    public sealed partial class EscapeGame : MonoBehaviour
     {
         public static EscapeGame Instance;
         public const int SolidMask = 1 << 8;
@@ -30,7 +30,7 @@ namespace IrkutskPrototype
         bool driving, finished, dead;
         string message = "Собери детали и вернись в гараж";
         public bool IsDriving => driving;
-        public bool IsOver => finished || dead;
+        public bool IsOver => finished || dead || detained;
         public Vector3 Target => driving ? Car.position : Hero.position;
         Material orange, blue, green, dark, asphalt, snow, steel, amber, red;
         GUIStyle normal, title, small;
@@ -53,6 +53,7 @@ namespace IrkutskPrototype
             steel = Mat(new Color(.43f,.46f,.48f)); amber = Mat(new Color(1f,.75f,.15f));
             red = Mat(new Color(.75f,.17f,.16f));
             BuildWorld();
+            BuildExpedition();
             Fog=gameObject.AddComponent<FogOfWar>(); Fog.Initialize(this);
             sound = gameObject.AddComponent<AudioSource>(); sound.spatialBlend = 0;
             shotClip = Tone(120, .12f); hitClip = Tone(65,.08f);
@@ -127,7 +128,7 @@ namespace IrkutskPrototype
             Box("Crates",new Vector3(-4,.7f,-2),new Vector3(3,1.4f,2),orange);
             Box("Highway obstacle",new Vector3(52,.6f,3.8f),new Vector3(3,1.2f,3),steel);
             Box("Highway obstacle",new Vector3(76,.6f,-3.7f),new Vector3(3,1.2f,3),steel);
-            Label("ВЫЕЗД →",new Vector3(24,.2f,4),Color.white,.32f);
+            Label("ВЫЕЗД →",new Vector3(29,.2f,-4),Color.white,.32f);
             Box("Finish",new Vector3(106,.06f,0),new Vector3(1,.05f,12),green,false);
             Label("БЕЗОПАСНАЯ ЗОНА",new Vector3(109,.2f,0),Color.white,.3f);
             Vector3[] locations={new Vector3(-18,.5f,4),new Vector3(1,.5f,18),new Vector3(20,.5f,9),new Vector3(16,.5f,-9)};
@@ -173,9 +174,11 @@ namespace IrkutskPrototype
         {
             if(Press(UnityEngine.InputSystem.Key.F5)) { SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex); return; }
             if(IsOver) return;
-            if(driving) Drive(); else Walk();
-            if(Press(UnityEngine.InputSystem.Key.E)) Interact();
-            if(!driving)
+            TickExpedition();
+            if(IsOver) return;
+            if(!InteractionOpen && Time.time>=heroStunUntil) { if(driving) Drive(); else Walk(); }
+            if(Press(UnityEngine.InputSystem.Key.E) && Time.time>=heroStunUntil) Interact();
+            if(!driving && !InteractionOpen && Time.time>=heroStunUntil)
             {
                 if((Mouse.current!=null && Mouse.current.leftButton.wasPressedThisFrame)||Press(UnityEngine.InputSystem.Key.Space)) Punch();
                 if((Mouse.current!=null && Mouse.current.rightButton.wasPressedThisFrame)||Press(UnityEngine.InputSystem.Key.Q)) Shoot();
@@ -219,20 +222,26 @@ namespace IrkutskPrototype
             if(Mathf.Abs(speed)>.2f) Car.Rotate(0,input.x*75*Time.deltaTime*Mathf.Sign(speed),0);
             Vector3 travel=Car.forward*speed*Time.deltaTime;
             if(travel.sqrMagnitude>0 && Physics.BoxCast(Car.position+Vector3.up*.7f,new Vector3(.85f,.6f,1.65f),travel.normalized,out _,Car.rotation,travel.magnitude+.1f,SolidMask))
-            { durability-=Mathf.Abs(speed)*.8f; speed=-speed*.25f; Say("Столкновение! Береги машину"); }
+            { DamageCar(Mathf.Abs(speed)*.8f); speed=-speed*.25f; Say("Столкновение! Береги машину"); }
             else Car.position+=travel;
             if(Mathf.Abs(speed)>1) Noise(Car.position,24);
             foreach(var z in Zombies)
                 if(!z.Downed && Vector3.Distance(z.transform.position,Car.position)<2.3f && Mathf.Abs(speed)>5)
-                { z.Hit(60,2.5f,Car.forward*2); durability-=3; }
-            if(Car.position.x>106) { finished=true; finalTime=Time.time-started; Say("Ты выбрался из Иркутска!"); }
+                { z.Hit(60,2.5f,Car.forward*2); DamageCar(3); }
+            foreach(var human in Humans)
+                if(!human.Downed && Vector3.Distance(human.transform.position,Car.position)<2.3f && Mathf.Abs(speed)>5) human.Hit(150);
+            if(Car.position.x>106) { finished=true; finalTime=Time.time-started; SettleExtraction(); Say("Ты выбрался из Иркутска!"); }
         }
         void Interact()
         {
             if(driving) { Say("Доедь до зелёной линии в конце трассы"); return; }
+            if(InteractionOpen) { CloseInteraction(); return; }
+            if(TryExpeditionInteraction()) return;
             if(Vector3.Distance(Hero.position,Car.position)<4.2f)
             {
-                if(bag.Count>0) { int k=bag[0]; bag.RemoveAt(0); installed[k]=true; Noise(Car.position,12); Say("Установлено: "+partNames[k]); return; }
+                if(bag.Contains(5)) { InstallArmor(); return; }
+                int index=bag.FindIndex(k=>k<4);
+                if(index>=0) { int k=bag[index]; bag.RemoveAt(index); installed[k]=true; Noise(Car.position,12); Say("Установлено: "+partNames[k]); return; }
                 if(InstalledCount()==4) { driving=true; Hero.gameObject.SetActive(false); Say("W/S — газ и тормоз, A/D — поворот. На трассу!"); return; }
                 Say("Не хватает деталей. Ищи цветные кубы во дворах"); return;
             }
@@ -251,6 +260,8 @@ namespace IrkutskPrototype
                 if(!z.Downed && Vector3.Distance(Hero.position,z.transform.position)<2 && Vector3.Dot(Hero.forward,(z.transform.position-Hero.position).normalized)>.25f &&
                     !Physics.Linecast(Hero.position+Vector3.up,z.transform.position+Vector3.up,SolidMask))
                     z.Hit(25,.65f,Hero.forward*.45f);
+            foreach(var human in Humans)
+                if(!human.Downed && Vector3.Distance(Hero.position,human.transform.position)<2 && Vector3.Dot(Hero.forward,(human.transform.position-Hero.position).normalized)>.25f && !Physics.Linecast(Hero.position+Vector3.up,human.transform.position+Vector3.up,SolidMask)) human.Hit(25);
         }
         void Shoot()
         {
@@ -258,6 +269,7 @@ namespace IrkutskPrototype
             if(ammo==0) { Say("Нет патронов — нажми R"); return; }
             ammo--; shotAt=Time.time+.35f; flashUntil=Time.time+.08f;
             Noise(Hero.position,30); sound.PlayOneShot(shotClip,.65f);
+            ReportGunfire(Hero.position);
             Vector3 origin=Hero.position+Vector3.up;
             var hits=Physics.RaycastAll(origin,Hero.forward,35);
             System.Array.Sort(hits,(a,b)=>a.distance.CompareTo(b.distance));
@@ -266,6 +278,8 @@ namespace IrkutskPrototype
             {
                 if(h.collider.gameObject==Hero.gameObject) continue;
                 var z=h.collider.GetComponent<Infected>();
+                var human=h.collider.GetComponent<HumanAgent>();
+                if(human!=null && !human.Downed) { human.Hit(20); end=h.point; break; }
                 if(z!=null && !z.Downed) { z.Hit(20,1.6f,Hero.forward*.25f); end=h.point; break; }
                 if(h.collider.gameObject.layer==8) { end=h.point; break; }
             }
@@ -280,8 +294,8 @@ namespace IrkutskPrototype
             noisePosition=position; noiseRadius=radius; noiseUntil=Time.time+.45f;
             foreach(var z in Zombies) if(!z.Downed && Vector3.Distance(z.transform.position,position)<radius) z.Hear(position);
         }
-        public void Damage(float value)
-        { if(IsOver) return; if(driving) durability=Mathf.Max(0,durability-value); else hp=Mathf.Max(0,hp-value); }
+        public void Damage(float value,bool infect=false)
+        { if(IsOver) return; if(driving) DamageCar(value); else { hp=Mathf.Max(0,hp-value); if(infect) infection=Mathf.Min(100,infection+8); } }
         void Say(string text) { message=text; messageUntil=Time.time+4; }
         int InstalledCount() { int count=0; foreach(bool b in installed) if(b)count++; return count; }
         AudioClip Tone(float frequency,float seconds)
@@ -301,6 +315,7 @@ namespace IrkutskPrototype
                 normal=new GUIStyle(GUI.skin.label){fontSize=18,wordWrap=true}; normal.normal.textColor=Color.white;
                 title=new GUIStyle(normal){fontSize=27,fontStyle=FontStyle.Bold}; small=new GUIStyle(normal){fontSize=14};
             }
+            DrawExpedition(width,height);
             Panel(new Rect(18,18,300,100)); GUI.Label(new Rect(32,28,270,30),"ПОБЕГ ИЗ ИРКУТСКА",normal);
             GUI.Label(new Rect(32,60,270,28),driving?$"Машина: {durability:0}%  •  {Mathf.Abs(speed)*3.6f:0} км/ч":$"Здоровье: {hp:0}%  •  Патроны: {ammo}/6",normal);
             GUI.Label(new Rect(32,88,270,25),$"Время: {(IsOver?finalTime:Time.time-started):0} с",small);
@@ -316,7 +331,7 @@ namespace IrkutskPrototype
             {
                 Panel(new Rect(width-294,height-110,276,92));
                 GUI.Label(new Rect(width-280,height-101,252,25),$"РЮКЗАК {bag.Count}/2",normal);
-                GUI.Label(new Rect(width-280,height-70,252,46),bag.Count==0?"Пусто":string.Join(" • ",bag.ConvertAll(k=>partNames[k])),small);
+                GUI.Label(new Rect(width-280,height-70,252,46),bag.Count==0?"Пусто":string.Join(" • ",bag.ConvertAll(ItemName)),small);
                 if(Key(UnityEngine.InputSystem.Key.LeftCtrl)||Key(UnityEngine.InputSystem.Key.RightCtrl))
                     GUI.Label(new Rect(width/2-180,18,360,35),"ТИХИЙ ШАГ — тебя не слышно",normal);
             }
@@ -331,8 +346,8 @@ namespace IrkutskPrototype
             if(IsOver)
             {
                 Panel(new Rect(width/2-310,height/2-105,620,210));
-                GUI.Label(new Rect(width/2-280,height/2-80,560,50),finished?"ТЫ ВЫБРАЛСЯ!":"ПОБЕГ НЕ УДАЛСЯ",title);
-                GUI.Label(new Rect(width/2-280,height/2-20,560,50),finished?$"Время: {finalTime:0} с. Машина сохранена на {durability:0}%.":"Зомби или столкновения остановили тебя.",normal);
+                GUI.Label(new Rect(width/2-280,height/2-80,560,50),finished?"ТЫ ВЫБРАЛСЯ!":detained?"ТЕБЯ ЗАДЕРЖАЛИ":"ПОБЕГ НЕ УДАЛСЯ",title);
+                GUI.Label(new Rect(width/2-280,height/2-20,560,50),finished?$"Время: {finalTime:0} с. Машина сохранена на {durability:0}%.":detained?"Добыча конфискована. Нажми F5 для нового забега.":"Зомби или столкновения остановили тебя.",normal);
                 if(GUI.Button(new Rect(width/2-130,height/2+45,260,40),"Начать заново (F5)")) SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
         }

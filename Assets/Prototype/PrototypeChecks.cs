@@ -36,6 +36,18 @@ namespace IrkutskPrototype
             string[] args=Environment.GetCommandLineArgs();
             if(Array.IndexOf(args,"-prototype-preview")>=0)
             {
+                if(Array.IndexOf(args,"-social-tour")>=0)
+                {
+                    foreach(var z in game.Zombies) z.enabled=false;
+                    foreach(var human in game.Humans) human.enabled=false;
+                    Teleport(game,new Vector3(-8,0,-2)); game.Fog.Refresh();
+                }
+                if(Array.IndexOf(args,"-patrol-tour")>=0)
+                {
+                    foreach(var z in game.Zombies) z.enabled=false;
+                    foreach(var human in game.Humans) human.enabled=false;
+                    Teleport(game,new Vector3(22,0,1)); game.Fog.Refresh();
+                }
                 if(Array.IndexOf(args,"-fog-tour")>=0)
                 {
                     foreach(var z in game.Zombies) z.enabled=false;
@@ -67,6 +79,8 @@ namespace IrkutskPrototype
         {
             Check(game.Parts.Count==4 && game.Zombies.Count==8,"world and actors spawned");
             foreach(var enemy in game.Zombies) enemy.enabled=false;
+            foreach(var human in game.Humans) human.enabled=false;
+            ExpeditionChecks.Run(game);
             Check(game.Fog!=null,"fog initialized");
             Teleport(game,new Vector3(0,0,-10)); game.Fog.Refresh();
             Vector3 remembered=new Vector3(0,0,-10);

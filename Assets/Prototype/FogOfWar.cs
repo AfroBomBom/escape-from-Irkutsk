@@ -30,8 +30,10 @@ namespace IrkutskPrototype
             foreach(var z in game.Zombies) RegisterDynamic(z.gameObject);
             foreach(var p in game.Parts) RegisterDynamic(p.gameObject);
             RegisterDynamic(game.Car.gameObject);
+            foreach(var human in game.Humans) RegisterDynamic(human.gameObject);
+            foreach(var item in game.ExtraItems) RegisterDynamic(item.gameObject);
             foreach(var text in FindObjectsByType<TextMesh>(FindObjectsSortMode.None))
-                if(!text.GetComponentInParent<SparePart>()) labels.Add(text);
+                if(!text.GetComponentInParent<SparePart>() && !text.GetComponentInParent<HumanAgent>() && !text.GetComponentInParent<ExpeditionPickup>()) labels.Add(text);
             var camera=FindAnyObjectByType<Camera>();
             if(camera) { camera.clearFlags=CameraClearFlags.SolidColor; camera.backgroundColor=Darkness; }
             Refresh();
