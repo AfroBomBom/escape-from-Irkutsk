@@ -11,6 +11,7 @@ namespace IrkutskPrototype
         public const int SolidMask = 1 << 8;
         public Transform Hero, Car;
         public CharacterController Controller;
+        public FogOfWar Fog { get; private set; }
         public readonly List<Infected> Zombies = new List<Infected>();
         public readonly List<SparePart> Parts = new List<SparePart>();
         readonly List<int> bag = new List<int>();
@@ -52,13 +53,14 @@ namespace IrkutskPrototype
             steel = Mat(new Color(.43f,.46f,.48f)); amber = Mat(new Color(1f,.75f,.15f));
             red = Mat(new Color(.75f,.17f,.16f));
             BuildWorld();
+            Fog=gameObject.AddComponent<FogOfWar>(); Fog.Initialize(this);
             sound = gameObject.AddComponent<AudioSource>(); sound.spatialBlend = 0;
             shotClip = Tone(120, .12f); hitClip = Tone(65,.08f);
         }
 
         Material Mat(Color color)
         {
-            var surface = Resources.Load<Material>("PrototypeSurface");
+            var surface = Resources.Load<Material>("ExplorationSurface");
             var shader = surface != null ? surface.shader : Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null) shader = Shader.Find("Standard");
             var m = new Material(shader); m.color = color; materials.Add(m); return m;
@@ -268,8 +270,10 @@ namespace IrkutskPrototype
                 if(h.collider.gameObject.layer==8) { end=h.point; break; }
             }
             var tracer=new GameObject("Shot tracer"); var line=tracer.AddComponent<LineRenderer>();
+            tracer.transform.position=origin;
             line.sharedMaterial=amber; line.startWidth=.07f; line.endWidth=.02f; line.positionCount=2;
             line.SetPosition(0,origin+Hero.forward*.6f); line.SetPosition(1,end); Destroy(tracer,.09f);
+            if(Fog!=null) Fog.RegisterDynamic(tracer);
         }
         public void Noise(Vector3 position,float radius)
         {
@@ -319,7 +323,7 @@ namespace IrkutskPrototype
             if(Time.time<messageUntil) { Panel(new Rect(width/2-280,height-168,560,44)); GUI.Label(new Rect(width/2-265,height-160,530,35),message,normal); }
             if(!driving && Vector3.Distance(Hero.position,Car.position)<4.2f)
                 GUI.Label(new Rect(width/2-220,height/2+105,440,35),bag.Count>0?"E — установить деталь":InstalledCount()==4?"E — сесть и уехать":"Машина: нужны ещё детали",normal);
-            foreach(var z in Zombies) if(!z.Downed && Vector3.Distance(Target,z.transform.position)<21)
+            foreach(var z in Zombies) if(!z.Downed && Vector3.Distance(Target,z.transform.position)<21 && (Fog==null || Fog.IsVisible(z.transform.position)))
             {
                 Vector3 p=view.WorldToScreenPoint(z.transform.position+Vector3.up*2.6f);
                 if(p.z>0) GUI.Label(new Rect(p.x/scale-45,(Screen.height-p.y)/scale,110,25),z.Status,small);

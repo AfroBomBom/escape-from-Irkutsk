@@ -12,6 +12,8 @@ namespace IrkutskPrototype
         public static void CreateScene()
         {
             if(!AssetDatabase.IsValidFolder("Assets/Resources")) AssetDatabase.CreateFolder("Assets","Resources");
+            if(AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/ExplorationSurface.mat")==null)
+                AssetDatabase.CreateAsset(new Material(Shader.Find("Irkutsk/Exploration")),"Assets/Resources/ExplorationSurface.mat");
             if(AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/PrototypeSurface.mat")==null)
                 AssetDatabase.CreateAsset(new Material(Shader.Find("Universal Render Pipeline/Lit")),"Assets/Resources/PrototypeSurface.mat");
             var scene=EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single);

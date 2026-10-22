@@ -36,6 +36,12 @@ namespace IrkutskPrototype
             string[] args=Environment.GetCommandLineArgs();
             if(Array.IndexOf(args,"-prototype-preview")>=0)
             {
+                if(Array.IndexOf(args,"-fog-tour")>=0)
+                {
+                    foreach(var z in game.Zombies) z.enabled=false;
+                    Teleport(game,new Vector3(-10,0,-10)); game.Fog.Refresh();
+                    Teleport(game,new Vector3(5,0,-10)); game.Fog.Refresh();
+                }
                 yield return new WaitUntil(()=>UnityEngine.Rendering.SplashScreen.isFinished);
                 yield return new WaitForSeconds(1);
                 int index=Array.IndexOf(args,"-capture-path");
@@ -61,6 +67,21 @@ namespace IrkutskPrototype
         {
             Check(game.Parts.Count==4 && game.Zombies.Count==8,"world and actors spawned");
             foreach(var enemy in game.Zombies) enemy.enabled=false;
+            Check(game.Fog!=null,"fog initialized");
+            Teleport(game,new Vector3(0,0,-10)); game.Fog.Refresh();
+            Vector3 remembered=new Vector3(0,0,-10);
+            Check(game.Fog.IsVisible(remembered) && game.Fog.IsExplored(remembered),"current view is revealed");
+            Check(!game.Fog.IsExplored(new Vector3(90,0,0)),"unvisited highway is unknown");
+            Teleport(game,new Vector3(20,0,-10)); game.Fog.Refresh();
+            Check(game.Fog.IsExplored(remembered) && !game.Fog.IsVisible(remembered),"departed ground remains explored but not visible");
+            Check(!game.Zombies[0].GetComponentInChildren<Renderer>().enabled,"offscreen infected hidden");
+            Check(!game.Parts[0].GetComponent<Renderer>().enabled,"offscreen loot hidden");
+            Teleport(game,new Vector3(4,0,3)); game.Fog.Refresh();
+            Check(!game.Fog.IsVisible(new Vector3(4,0,11)),"fog view does not pass through building");
+            Teleport(game,new Vector3(4,0,11)); game.Fog.Refresh();
+            Check(!game.Fog.IsVisible(new Vector3(4,0,9.3f)),"exact visibility rejects objects just behind a wall");
+            Teleport(game,remembered); game.Fog.Refresh();
+            Check(game.Fog.IsVisible(remembered),"returning restores current view");
             var z=game.Zombies[0]; var cc=z.GetComponent<CharacterController>();
             cc.enabled=false; z.transform.position=Vector3.zero; z.transform.rotation=Quaternion.identity; cc.enabled=true;
             Teleport(game,new Vector3(0,0,3));
