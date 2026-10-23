@@ -58,8 +58,18 @@ namespace IrkutskPrototype
                 yield return new WaitForSeconds(1);
                 int index=Array.IndexOf(args,"-capture-path");
                 string path=index>=0 && index+1<args.Length?args[index+1]:"prototype-preview.png";
+                if(Array.IndexOf(args,"-combat-tour")>=0)
+                {
+                    foreach(var enemy in game.Zombies) enemy.enabled=false;
+                    foreach(var human in game.Humans) human.enabled=false;
+                    Teleport(game,new Vector3(22,0,1));
+                    game.Hero.forward=(game.Soldier.transform.position-game.Hero.position).normalized;
+                    game.enabled=false; game.Fog.Refresh(); game.SoldierShot(game.Soldier);
+                }
+                else { game.Hero.rotation=Quaternion.identity; game.enabled=false; game.Fog.Refresh(); }
                 // Explicit offscreen render also works when Windows hides the test window.
                 var camera=FindAnyObjectByType<Camera>();
+                camera.transform.position=game.Target+new Vector3(0,27,-12.6f);
                 var target=new RenderTexture(1280,720,24);
                 target.Create();
                 UnityEngine.Rendering.RenderPipeline.SubmitRenderRequest(camera,
@@ -80,6 +90,7 @@ namespace IrkutskPrototype
             Check(game.Parts.Count==4 && game.Zombies.Count==8,"world and actors spawned");
             foreach(var enemy in game.Zombies) enemy.enabled=false;
             foreach(var human in game.Humans) human.enabled=false;
+            CombatChecks.Run(game);
             ExpeditionChecks.Run(game);
             Check(game.Fog!=null,"fog initialized");
             Teleport(game,new Vector3(0,0,-10)); game.Fog.Refresh();
@@ -108,7 +119,7 @@ namespace IrkutskPrototype
             Set(game,"footAt",0f); Call(game,"Walk");
             Check((float)Get(z,"alertUntil")>Time.time,"ordinary footsteps alert nearby infected");
             InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState()); InputSystem.Update();
-            Teleport(game,new Vector3(0,0,8)); Set(z,"alertUntil",0f); z.transform.rotation=Quaternion.identity;
+            Teleport(game,new Vector3(0,0,5.5f)); Set(z,"alertUntil",0f); z.transform.rotation=Quaternion.identity;
             Call(z,"Update"); Check((float)Get(z,"alertUntil")>Time.time,"infected sees player in view cone");
             cc.enabled=false; z.transform.position=new Vector3(4,0,3); cc.enabled=true;
             Teleport(game,new Vector3(4,0,11)); z.transform.rotation=Quaternion.identity; Set(z,"alertUntil",0f); Physics.SyncTransforms();

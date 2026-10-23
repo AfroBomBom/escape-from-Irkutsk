@@ -54,6 +54,7 @@ namespace IrkutskPrototype
             red = Mat(new Color(.75f,.17f,.16f));
             BuildWorld();
             BuildExpedition();
+            BuildCombat();
             Fog=gameObject.AddComponent<FogOfWar>(); Fog.Initialize(this);
             sound = gameObject.AddComponent<AudioSource>(); sound.spatialBlend = 0;
             shotClip = Tone(120, .12f); hitClip = Tone(65,.08f);
@@ -176,9 +177,9 @@ namespace IrkutskPrototype
             if(IsOver) return;
             TickExpedition();
             if(IsOver) return;
-            if(!InteractionOpen && Time.time>=heroStunUntil) { if(driving) Drive(); else Walk(); }
+            if(!InteractionOpen && !BreakingIn && Time.time>=heroStunUntil) { if(driving) Drive(); else Walk(); }
             if(Press(UnityEngine.InputSystem.Key.E) && Time.time>=heroStunUntil) Interact();
-            if(!driving && !InteractionOpen && Time.time>=heroStunUntil)
+            if(!driving && !InteractionOpen && !BreakingIn && Time.time>=heroStunUntil)
             {
                 if((Mouse.current!=null && Mouse.current.leftButton.wasPressedThisFrame)||Press(UnityEngine.InputSystem.Key.Space)) Punch();
                 if((Mouse.current!=null && Mouse.current.rightButton.wasPressedThisFrame)||Press(UnityEngine.InputSystem.Key.Q)) Shoot();
@@ -286,6 +287,7 @@ namespace IrkutskPrototype
             var tracer=new GameObject("Shot tracer"); var line=tracer.AddComponent<LineRenderer>();
             tracer.transform.position=origin;
             line.sharedMaterial=amber; line.startWidth=.07f; line.endWidth=.02f; line.positionCount=2;
+            line.generateLightingData=true;
             line.SetPosition(0,origin+Hero.forward*.6f); line.SetPosition(1,end); Destroy(tracer,.09f);
             if(Fog!=null) Fog.RegisterDynamic(tracer);
         }
@@ -295,7 +297,7 @@ namespace IrkutskPrototype
             foreach(var z in Zombies) if(!z.Downed && Vector3.Distance(z.transform.position,position)<radius) z.Hear(position);
         }
         public void Damage(float value,bool infect=false)
-        { if(IsOver) return; if(driving) DamageCar(value); else { hp=Mathf.Max(0,hp-value); if(infect) infection=Mathf.Min(100,infection+8); } }
+        { if(IsOver) return; if(driving) DamageCar(value); else { float before=hp; hp=Mathf.Max(0,hp-value); ShowDamage(before-hp,"ЗДОРОВЬЕ"); if(infect) infection=Mathf.Min(100,infection+8); } }
         void Say(string text) { message=text; messageUntil=Time.time+4; }
         int InstalledCount() { int count=0; foreach(bool b in installed) if(b)count++; return count; }
         AudioClip Tone(float frequency,float seconds)
@@ -350,6 +352,7 @@ namespace IrkutskPrototype
                 GUI.Label(new Rect(width/2-280,height/2-20,560,50),finished?$"Время: {finalTime:0} с. Машина сохранена на {durability:0}%.":detained?"Добыча конфискована. Нажми F5 для нового забега.":"Зомби или столкновения остановили тебя.",normal);
                 if(GUI.Button(new Rect(width/2-130,height/2+45,260,40),"Начать заново (F5)")) SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
+            DrawDamageFeedback(width,height);
         }
         void Panel(Rect rect) { var old=GUI.color; GUI.color=new Color(.06f,.09f,.12f,.92f); GUI.DrawTexture(rect,Texture2D.whiteTexture); GUI.color=old; }
         void OnDrawGizmos()

@@ -15,7 +15,7 @@ namespace IrkutskPrototype
         Texture2D map;
         EscapeGame game;
         float nextRefresh;
-        sealed class Group { public Transform Root; public Renderer[] Renderers; }
+        sealed class Group { public Transform Root; public Renderer[] Renderers; public bool Self; }
 
         public void Initialize(EscapeGame owner)
         {
@@ -30,6 +30,7 @@ namespace IrkutskPrototype
             foreach(var z in game.Zombies) RegisterDynamic(z.gameObject);
             foreach(var p in game.Parts) RegisterDynamic(p.gameObject);
             RegisterDynamic(game.Car.gameObject);
+            RegisterDynamic(game.Hero.gameObject);
             foreach(var human in game.Humans) RegisterDynamic(human.gameObject);
             foreach(var item in game.ExtraItems) RegisterDynamic(item.gameObject);
             foreach(var text in FindObjectsByType<TextMesh>(FindObjectsSortMode.None))
@@ -54,6 +55,7 @@ namespace IrkutskPrototype
         {
             int i=Index(point);
             if(i<0 || pixels[i].g==0 || game==null) return false;
+            if(!Sight.InCone(game.Target,game.IsDriving?game.Car.forward:game.Hero.forward,point,game.IsDriving?14:Sight.HeroRange,Sight.HeroAngle)) return false;
             // Grid cells can straddle a wall. Check the exact point for labels/actors as well.
             Vector3 eye=game.Target+Vector3.up*1.25f;
             Vector3 target=new Vector3(point.x,eye.y,point.z);
@@ -71,7 +73,7 @@ namespace IrkutskPrototype
             if(game==null || map==null) return;
             for(int i=0;i<pixels.Length;i++) pixels[i].g=0;
             Vector3 eye=game.Target+Vector3.up*1.25f;
-            float radius=game.IsDriving?14:10;
+            float radius=game.IsDriving?14:Sight.HeroRange;
             int minX=Mathf.Max(0,Mathf.FloorToInt(eye.x-radius-Origin.x));
             int maxX=Mathf.Min(Width-1,Mathf.CeilToInt(eye.x+radius-Origin.x));
             int minZ=Mathf.Max(0,Mathf.FloorToInt(eye.z-radius-Origin.y));
@@ -80,11 +82,12 @@ namespace IrkutskPrototype
             {
                 Vector3 destination=new Vector3(Origin.x+x+.5f,eye.y,Origin.y+z+.5f);
                 Vector3 delta=destination-eye; float distance=delta.magnitude;
-                if(distance>radius) continue;
+                if(!Sight.InCone(eye,game.IsDriving?game.Car.forward:game.Hero.forward,destination,radius,Sight.HeroAngle)) continue;
                 // Reveal the front surface of a wall, but not rooms behind it.
                 bool blocked=distance>.01f && Physics.Raycast(eye,delta.normalized,out var hit,distance,EscapeGame.SolidMask) && hit.distance<distance-.7f;
                 if(!blocked) pixels[z*Width+x]=new Color32(255,255,0,255);
             }
+            int self=Index(game.Target); if(self>=0) pixels[self]=new Color32(255,255,0,255);
             map.SetPixels32(pixels); map.Apply(false);
             UpdateObjects();
         }
@@ -94,7 +97,13 @@ namespace IrkutskPrototype
             {
                 var group=groups[i];
                 if(!group.Root) { groups.RemoveAt(i); continue; }
-                bool visible=IsVisible(group.Root.position);
+                bool self=group.Root==game.Hero || (group.Root==game.Car && game.IsDriving);
+                if(self!=group.Self)
+                {
+                    group.Self=self; var block=new MaterialPropertyBlock(); block.SetFloat("_FogDynamic",1); block.SetFloat("_FogSelf",self?1:0);
+                    foreach(var r in group.Renderers) if(r && !r.GetComponent<TextMesh>()) r.SetPropertyBlock(block);
+                }
+                bool visible=self || IsVisible(group.Root.position) || (group.Renderers.Length>0 && group.Renderers[0] is LineRenderer);
                 foreach(var r in group.Renderers) if(r) r.enabled=visible;
             }
             foreach(var text in labels) if(text)

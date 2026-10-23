@@ -4,6 +4,7 @@ Shader "Irkutsk/Exploration"
     {
         [MainColor] _BaseColor ("Color", Color) = (1,1,1,1)
         _FogDynamic ("Hide outside current view", Float) = 0
+        _FogSelf ("Controlled character", Float) = 0
     }
     SubShader
     {
@@ -22,6 +23,7 @@ Shader "Irkutsk/Exploration"
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
                 float _FogDynamic;
+                float _FogSelf;
             CBUFFER_END
             struct Attributes { float4 positionOS:POSITION; float3 normalOS:NORMAL; };
             struct Varyings { float4 positionCS:SV_POSITION; float3 world:TEXCOORD0; half3 normal:TEXCOORD1; };
@@ -39,6 +41,7 @@ Shader "Irkutsk/Exploration"
                 half2 state=SAMPLE_TEXTURE2D(_ExplorationMap,sampler_ExplorationMap,uv).rg;
                 if(any(uv<0) || any(uv>=1)) state=0;
                 if(_ExplorationEnabled<.5) state=1;
+                if(_FogSelf>.5) state=1;
                 // Dynamic objects must not leave dark silhouettes in explored territory.
                 if(_FogDynamic>.5) clip(state.g-.5);
                 half lighting=.65+.35*saturate(dot(normalize(input.normal),normalize(half3(-.3,1,-.4))));

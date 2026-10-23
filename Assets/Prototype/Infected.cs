@@ -28,11 +28,10 @@ namespace IrkutskPrototype
             if(game==null || game.IsOver || Downed || Time.time<stunnedUntil) return;
             Vector3 target=game.Target, delta=target-transform.position;
             float distance=delta.magnitude;
-            bool sees=distance<13 && (distance<2 || Vector3.Angle(transform.forward,delta)<65) &&
-                !Physics.Linecast(transform.position+Vector3.up,target+Vector3.up,EscapeGame.SolidMask);
+            bool sees=Sight.CanSee(transform,target,Sight.InfectedRange,Sight.InfectedAngle);
             if(sees) { destination=target; alertUntil=Time.time+6; }
             bool alert=Time.time<alertUntil;
-            if(distance<(game.IsDriving?2.6f:1.35f) && (sees || game.IsDriving))
+            if(distance<(game.IsDriving?2.6f:1.35f) && sees)
             { if(Time.time>=biteAt) { game.Damage(game.IsDriving?7:12,!game.IsDriving); biteAt=Time.time+1; } return; }
             if(!alert && Time.time>idleAt)
             { destination=home+new Vector3(Mathf.Sin(Time.time*.5f+home.x)*3,0,Mathf.Cos(Time.time*.4f+home.z)*3); idleAt=Time.time+4; }
