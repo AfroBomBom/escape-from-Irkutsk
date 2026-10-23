@@ -34,12 +34,15 @@ namespace IrkutskPrototype
         { if(Vector3.Distance(transform.position,home)>1) { State="Возвращаюсь"; MoveTo(home,.8f); } else State="Мирный"; }
         bool NeedsSupport()
         {
-            if(Role!=HumanRole.Medic || Game.Soldier.Downed || Game.Soldier.Health>=65) return false;
-            if(Vector3.Distance(transform.position,Game.Soldier.transform.position)>12) return false;
-            return !targetVisible || !CurrentTarget || !Game.Threat(CurrentTarget) || Vector3.Distance(transform.position,CurrentTarget.position)>7;
+            return Role==HumanRole.Medic && Game.Soldier && Game.Soldier.gameObject.activeInHierarchy && !Game.Soldier.Downed && !Game.Soldier.IsDetained
+                && Game.Soldier.Health<65 && Time.time>=healAt && Vector3.Distance(transform.position,Game.Soldier.transform.position)<=12
+                && SafeToTreat(Game.Soldier) && SafeSupportPath(Game.Soldier.transform.position);
         }
         void AssistPartner()
-        { State="Лечу напарника"; MoveTo(Game.Soldier.transform.position,2.3f); }
+        {
+            ReleaseCover(); SetTask(PatrolTask.Support,Game.Soldier.transform.position);
+            State="Лечу напарника"; MoveTo(Game.Soldier.transform.position,2.3f);
+        }
         void MoveCombat(Vector3 goal)
         {
             Quaternion facing=transform.rotation;

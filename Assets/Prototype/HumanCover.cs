@@ -10,7 +10,7 @@ namespace IrkutskPrototype
         Vector3 peekGoal;
         bool CanContinueCover()
         {
-            if(!CurrentTarget || Time.time>=searchUntil) return false;
+            if(!CurrentTarget || Time.time>=searchUntil || (IsPatrol && !Game.Threat(CurrentTarget))) return false;
             if(SelectedCover) return true;
             if(targetVisible || (IsPatrol && !Game.Threat(CurrentTarget))) return false;
             foreach(var slot in CoverSlot.Active)
@@ -25,7 +25,8 @@ namespace IrkutskPrototype
             var posture=GetComponent<ActorPosture>();
             if(posture && posture.IsCrouched && controller && controller.enabled && gameObject.activeInHierarchy && !Downed) posture.TrySetCrouched(false);
         }
-        void OnDisable()=>ReleaseCover();
+        void OnDisable()
+        { ReleaseCover(); TacticalTask=PatrolTask.None; taskUntil=0; taskFrame=-1; }
         bool TryUseRegisteredCover()
         {
             if(!CurrentTarget) return false;
@@ -74,6 +75,7 @@ namespace IrkutskPrototype
             if(nextPeekAt<=0) nextPeekAt=Time.time+1;
             if(Time.time>=nextPeekAt)
             {
+                if(IsPatrol && PartnerMoving()) { nextPeekAt=Time.time+.3f; return true; }
                 bool found=false;
                 foreach(bool left in new[]{true,false})
                 {

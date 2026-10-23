@@ -31,6 +31,7 @@ namespace IrkutskPrototype
         public void Hit(float damage,bool playerCaused=true,Transform attacker=null)
         {
             if(Downed) return;
+            if(damage>0) lastDamageAt=Time.time;
             Health-=damage*(Role==HumanRole.Soldier?.5f:Role==HumanRole.Medic?.8f:1);
             Transform source=playerCaused?Game.Hero:attacker;
             if(Role==HumanRole.Civilian && source) Frighten(source.position);
@@ -75,8 +76,10 @@ namespace IrkutskPrototype
         void Update()
         {
             coverUsedThisTick=false;
+            taskFrame=-1;
             Behavior.Tick();
             if(!coverUsedThisTick) ReleaseCover();
+            if(taskFrame!=Time.frameCount) { TacticalTask=PatrolTask.None; taskUntil=0; }
         }
         BehaviorNode BuildBehavior()
         {
@@ -103,7 +106,7 @@ namespace IrkutskPrototype
                     Do("Обзор, память и лечение",ObserveAndSupport),
                     Select("Выбрать задачу",
                         When("Напарник ранен",NeedsSupport,Run("Подойти для лечения",AssistPartner)),
-                        When("Использую укрытие",CanContinueCover,Run("Укрыться и выглянуть",ContinueCover)),
+                        When("Использую укрытие",CanContinueCover,Run("Тактика из укрытия",Fight)),
                         When("Есть источник шума",()=>!CurrentTarget && HasSoundClue,Run("Осторожно проверить",InvestigateSound)),
                         When("Слабый звук",()=>!CurrentTarget && ListeningToWeakSound(),Run("Прислушаться",ListenToSound)),
                         When("Целей нет",()=>!CurrentTarget,Run("Обходить маршрут",Roam)),
@@ -126,8 +129,7 @@ namespace IrkutskPrototype
             if(CurrentTarget && !Game.Alive(CurrentTarget)) CurrentTarget=null;
             if(!seen && Time.time>=searchUntil) CurrentTarget=null;
             targetVisible=seen && CurrentTarget==seen;
-            if(Role==HumanRole.Medic && Time.time>healAt && (Health<100 || (!Game.Soldier.Downed && Game.Soldier.Health<100 && Vector3.Distance(transform.position,Game.Soldier.transform.position)<3)))
-            { Health=Mathf.Min(100,Health+15); if(!Game.Soldier.Downed && Vector3.Distance(transform.position,Game.Soldier.transform.position)<3) Game.Soldier.Health=Mathf.Min(100,Game.Soldier.Health+15); healAt=Time.time+8; }
+            TrySafeHealing();
         }
         void Search()
         {
@@ -142,21 +144,7 @@ namespace IrkutskPrototype
         }
         void Fight()
         {
-            State="Угроза";
-            if(TryUseRegisteredCover()) return;
-            if(Health<(Role==HumanRole.Medic?50:35)) { RetreatFighting(); return; }
-            if(RepositionIfBlocked()) return;
-            bool hero=Game.IsHero(CurrentTarget);
-            float distance=Vector3.Distance(transform.position,CurrentTarget.position);
-            bool mayFire=Role==HumanRole.Soldier || !hero || (distance<7 && !Game.IsDriving);
-            if(mayFire && Time.time>=shotAt)
-            { Game.NpcShot(this,CurrentTarget); shotAt=Time.time+(Role==HumanRole.Soldier?.8f:hero?5:1.3f); }
-            if(!hero && distance<2.5f)
-            {
-                Vector3 away=transform.position-CurrentTarget.position; away.y=0; away.Normalize();
-                if(!Physics.SphereCast(transform.position+Vector3.up,.4f,away,out _,.7f,EscapeGame.SolidMask)) controller.Move((away*1.7f+Vector3.down*8)*Time.deltaTime);
-            }
-            else MoveTo(CurrentTarget.position,Role==HumanRole.Soldier?6:4);
+            PatrolCombat();
         }
         void DropAndRoam() { CurrentTarget=null; Roam(); }
         void CoverTarget()

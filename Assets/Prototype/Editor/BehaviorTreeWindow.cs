@@ -39,6 +39,11 @@ namespace IrkutskPrototype
                 EditorGUILayout.LabelField("Укрытие",coverUser.SelectedCover?coverUser.SelectedCover.name:"Нет");
             if(actor is HumanAgent listener)
                 EditorGUILayout.LabelField("Источник шума",listener.HasSoundClue?listener.LastHeardPosition.ToString("F1"):"Нет активной зацепки");
+            if(actor is HumanAgent patrol && patrol.IsPatrol)
+            {
+                EditorGUILayout.LabelField("Тактическая задача",patrol.TacticalTask.ToString());
+                EditorGUILayout.LabelField("Удержание решения",patrol.TaskHoldRemaining.ToString("F1")+" с");
+            }
             scroll=EditorGUILayout.BeginScrollView(scroll);
             Draw(tree,0);
             EditorGUILayout.EndScrollView();

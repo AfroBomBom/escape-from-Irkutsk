@@ -7,6 +7,7 @@ namespace IrkutskPrototype
     public sealed class CoverSandbox : MonoBehaviour
     {
         bool combat,high;
+        bool pair;
         EscapeGame game;
         void Awake()
         {
@@ -44,10 +45,24 @@ namespace IrkutskPrototype
             if(Keyboard.current.f7Key.wasPressedThisFrame)
             { combat=!combat; game.Soldier.enabled=combat; if(combat) game.PatrolAttacked(game.Soldier); }
             if(Keyboard.current.f8Key.wasPressedThisFrame) { high=!high; PlaceHero(); }
+            if(Keyboard.current.f9Key.wasPressedThisFrame)
+            {
+                pair=!pair; game.Medic.gameObject.SetActive(pair);
+                if(pair)
+                {
+                    var cc=game.Medic.GetComponent<CharacterController>(); cc.enabled=false;
+                    game.Medic.transform.position=new Vector3(23,0,-2); cc.enabled=true;
+                    game.Medic.enabled=combat;
+                    if(combat) game.Medic.AlertTo(game.Hero);
+                }
+            }
+            if(pair) game.Medic.enabled=combat;
+            if(Keyboard.current.f10Key.wasPressedThisFrame && !game.Soldier.Downed && game.Soldier.Health>40)
+                game.Soldier.Hit((game.Soldier.Health-40)*2,false);
         }
         void OnGUI()
         {
-            GUI.Box(new Rect(Screen.width/2-260,Screen.height-100,520,85),"ПЕСОЧНИЦА УКРЫТИЙ — основная карта не изменена\nC — присесть / встать; WASD — подойти за препятствие\nF7 — включить / выключить бой солдата; F8 — низкое / высокое\nF5 — начать тест заново");
+            GUI.Box(new Rect(Screen.width/2-300,Screen.height-135,600,120),"ПЕСОЧНИЦА УКРЫТИЙ И ТАКТИКИ\nC — присесть / встать; WASD — движение\nF7 — бой; F8 — низкое / высокое; F9 — добавить / убрать врача\nF10 — ранить солдата до 40 HP; F5 — начать заново\nСолдат: "+game.Soldier.TacticalTask+" / "+game.Soldier.Health.ToString("F0")+" HP; врач: "+(pair?game.Medic.TacticalTask.ToString():"выключен"));
         }
     }
 }
