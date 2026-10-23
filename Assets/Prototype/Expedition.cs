@@ -32,6 +32,8 @@ namespace IrkutskPrototype
             Citizen=SpawnHuman("Житель",HumanRole.Civilian,new Vector3(-6,0,-13),blue);
             Medic=SpawnHuman("Врач",HumanRole.Medic,new Vector3(24,0,4),snow);
             Soldier=SpawnHuman("Солдат",HumanRole.Soldier,new Vector3(23,0,6),dark);
+            SpawnHuman("Мародёр",HumanRole.Marauder,new Vector3(18,0,-8),red);
+            Label("КАРАНТИН",new Vector3(27,.2f,17),Color.white,.22f);
             Box("Shop floor",new Vector3(-8,.02f,2),new Vector3(5,.08f,5),dark,false);
             Wall(new Vector3(-10.5f,1.5f,2),new Vector3(.3f,3,5));
             Wall(new Vector3(-5.5f,1.5f,2),new Vector3(.3f,3,5));
@@ -52,7 +54,7 @@ namespace IrkutskPrototype
             Box("Body",new Vector3(0,1,0),new Vector3(.65f,1,.45f),clothing,false,root.transform);
             Box("Head",new Vector3(0,1.7f,0),new Vector3(.4f,.4f,.4f),snow,false,root.transform);
             if(role==HumanRole.Medic) { Box("Red cross",new Vector3(0,1.3f,.25f),new Vector3(.35f,.12f,.06f),red,false,root.transform); Box("Scanner",new Vector3(.4f,1,.5f),new Vector3(.3f,.3f,.3f),blue,false,root.transform); }
-            if(role==HumanRole.Soldier) Box("Rifle",new Vector3(.4f,1,.5f),new Vector3(.2f,.25f,.9f),dark,false,root.transform);
+            if(role==HumanRole.Soldier || role==HumanRole.Marauder) Box("Rifle",new Vector3(.4f,1,.5f),new Vector3(.2f,.25f,.9f),dark,false,root.transform);
             var person=root.AddComponent<HumanAgent>(); person.Role=role; person.Game=this;
             person.Caption=Label(name,position+Vector3.up*2.6f,Color.white,.18f).GetComponent<TextMesh>();
             person.Caption.transform.SetParent(root.transform,true);
@@ -107,7 +109,7 @@ namespace IrkutskPrototype
             var stock=ExtraItems.Find(p=>p.Owned && p.gameObject.activeSelf);
             if(stock==null || !Near(stock.transform.position,2.1f)) return false;
             stock.gameObject.SetActive(false); bag.Add(4); shopLooted=true;
-            Change(-10,-10,"Кража из вскрытого магазина"); Say("Украдено лекарство: −10 репутации и штраф 10 ₽"); return true;
+            Change(0,-10,"Кража из вскрытого магазина"); Say("Украдено лекарство: −10 репутации, деньги не списываются"); return true;
         }
         void InstallArmor()
         {
@@ -115,7 +117,7 @@ namespace IrkutskPrototype
             bag.Remove(5); ArmorInstalled=true; ArmorPoints=50;
             Box("Installed armor",new Vector3(-1.02f,.9f,0),new Vector3(.12f,.85f,2),steel,false,Car);
             Box("Installed armor",new Vector3(1.02f,.9f,0),new Vector3(.12f,.85f,2),steel,false,Car);
-            Fog.RegisterDynamic(Car.gameObject); Noise(Car.position,12); Say("Броня установлена: +50 защиты машине");
+            Fog.RegisterDynamic(Car.gameObject); Noise(Car.position,6); Say("Броня установлена: +50 защиты машине");
         }
         void DamageCar(float damage)
         {
@@ -127,6 +129,7 @@ namespace IrkutskPrototype
         { if(settled) return; settled=true; Change(100+Mathf.RoundToInt(durability),8,"Успешный выезд"); }
         public void HumanKilled(HumanAgent person)
         {
+            if(person.Role==HumanRole.Marauder) { Change(0,0,"Мародёр обезврежен"); return; }
             Change(person.Role==HumanRole.Soldier?-40:-60,person.Role==HumanRole.Soldier?-15:-25,"Убит: "+person.name);
             if(person.Role==HumanRole.Medic || person.Role==HumanRole.Soldier) PatrolHostile=true;
             CloseInteraction();
@@ -147,17 +150,17 @@ namespace IrkutskPrototype
             if(!driving && !HeroStunned && !shopUnlocked && !InteractionOpen && Key(UnityEngine.InputSystem.Key.F) && Near(shopPosition))
             {
                 breakProgress+=Time.deltaTime;
-                if(Time.time>=breakNoiseAt) { Noise(shopPosition,18); breakNoiseAt=Time.time+.7f; }
+                if(Time.time>=breakNoiseAt) { Noise(shopPosition,8); breakNoiseAt=Time.time+.7f; }
                 if(breakProgress>=3) UnlockStore();
             }
             else breakProgress=0;
-            if(!driving && !Scanned && !Medic.Downed && Sight.CanSee(Medic.transform,Hero.position,Sight.ScannerRange,Sight.HumanAngle))
+            if(!driving && !Scanned && !Medic.Downed && (Medic.CurrentTarget==null || IsHero(Medic.CurrentTarget)) && Sight.CanSee(Medic.transform,Hero.position,Sight.ScannerRange,Sight.HumanAngle))
             {
                 scanProgress+=Time.deltaTime;
                 if(scanProgress>=2) { Scanned=true; Change(0,0,Sick?"Сканирование: заражён, патруль открывает огонь":"Сканирование: здоров, попытка задержания"); if(Sick) PatrolHostile=true; }
             }
             else if(!Scanned) scanProgress=0;
-            bool close=!driving && !PatrolHostile && ((!Medic.Downed && Sight.CanSee(Medic.transform,Hero.position,1.5f,Sight.HumanAngle)) || (!Soldier.Downed && Sight.CanSee(Soldier.transform,Hero.position,1.5f,Sight.HumanAngle)));
+            bool close=!driving && Scanned && !PatrolHostile && ((!Medic.Downed && Sight.CanSee(Medic.transform,Hero.position,1.5f,Sight.HumanAngle)) || (!Soldier.Downed && Sight.CanSee(Soldier.transform,Hero.position,1.5f,Sight.HumanAngle)));
             detainProgress=close?detainProgress+Time.deltaTime:0;
             if(detainProgress>=3) { detained=true; finalTime=Time.time-started; bag.Clear(); CloseInteraction(); Change(0,0,"Задержание: добыча конфискована"); }
         }
@@ -197,7 +200,7 @@ namespace IrkutskPrototype
             }
             else
             {
-                GUI.Label(new Rect(x+18,y+60,460,110),"Магазин закрыт, людей внутри нет.\nЗакрой окно и удерживай F у рольставней 3 секунды. Вскрытие шумное.\nКража товара: −10 репутации и штраф 10 ₽.",normal);
+                GUI.Label(new Rect(x+18,y+60,460,110),"Магазин закрыт, людей внутри нет.\nЗакрой окно и удерживай F у рольставней 3 секунды. Вскрытие шумное.\nКража: −10 репутации. Денежного штрафа нет.",normal);
             }
             if(GUI.Button(new Rect(x+140,y+228,220,40),"Закрыть (Esc)")) CloseInteraction();
         }

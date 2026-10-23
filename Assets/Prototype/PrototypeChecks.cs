@@ -34,6 +34,31 @@ namespace IrkutskPrototype
             yield return null; yield return null;
             var game=EscapeGame.Instance;
             string[] args=Environment.GetCommandLineArgs();
+            if(Array.IndexOf(args,"-patrol-live-check")>=0)
+            {
+                game.enabled=false;
+                foreach(var z in game.Zombies) { z.enabled=false; z.gameObject.SetActive(false); }
+                foreach(var h in game.Humans) if(!h.IsPatrol) h.gameObject.SetActive(false);
+                Teleport(game,new Vector3(-28,0,-22));
+                Vector3 medicStart=game.Medic.transform.position,soldierStart=game.Soldier.transform.position;
+                yield return new WaitForSeconds(4);
+                Check(Vector3.Distance(medicStart,game.Medic.transform.position)>2 && Vector3.Distance(soldierStart,game.Soldier.transform.position)>2,"live patrols both walk across map");
+                void Place(Transform actor,Vector3 point)
+                { var cc=actor.GetComponent<CharacterController>(); cc.enabled=false; actor.position=point; cc.enabled=true; actor.rotation=Quaternion.identity; }
+                Place(game.Medic.transform,Vector3.zero); Place(game.Soldier.transform,new Vector3(0,0,-2));
+                game.Citizen.gameObject.SetActive(true); Place(game.Citizen.transform,new Vector3(0,0,2));
+                Set(game.Medic,"<CurrentTarget>k__BackingField",null); Set(game.Medic,"scanTime",0f);
+                Physics.SyncTransforms();
+                yield return new WaitForSeconds(2.5f);
+                Check(game.Checked(game.Citizen.transform) && !game.Threat(game.Citizen.transform) && !game.Citizen.Downed,"live medic scans peaceful NPC without killing");
+                game.Citizen.gameObject.SetActive(false);
+                var target=game.Zombies[0]; target.gameObject.SetActive(true); Place(target.transform,new Vector3(0,0,2));
+                Set(game.Medic,"<CurrentTarget>k__BackingField",null); Set(game.Medic,"scanTime",0f);
+                int shots=game.SoldierTracers;
+                yield return new WaitForSeconds(2.7f);
+                Check(game.Threat(target.transform) && game.SoldierTracers>shots,"live infected scan transitions into patrol combat");
+                Debug.Log("IRKUTSK_PATROL_LIVE_OK"); Application.Quit(0); yield break;
+            }
             if(Array.IndexOf(args,"-prototype-preview")>=0)
             {
                 if(Array.IndexOf(args,"-social-tour")>=0)
@@ -91,6 +116,7 @@ namespace IrkutskPrototype
             foreach(var enemy in game.Zombies) enemy.enabled=false;
             foreach(var human in game.Humans) human.enabled=false;
             CombatChecks.Run(game);
+            PatrolChecks.Run(game);
             ExpeditionChecks.Run(game);
             Check(game.Fog!=null,"fog initialized");
             Teleport(game,new Vector3(0,0,-10)); game.Fog.Refresh();
@@ -109,7 +135,7 @@ namespace IrkutskPrototype
             Check(game.Fog.IsVisible(remembered),"returning restores current view");
             var z=game.Zombies[0]; var cc=z.GetComponent<CharacterController>();
             cc.enabled=false; z.transform.position=Vector3.zero; z.transform.rotation=Quaternion.identity; cc.enabled=true;
-            Teleport(game,new Vector3(0,0,3));
+            Teleport(game,new Vector3(0,0,2));
             Set(z,"alertUntil",0f); Set(game,"footAt",0f);
             if(Keyboard.current==null) InputSystem.AddDevice<Keyboard>();
             InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(Key.W,Key.LeftCtrl)); InputSystem.Update();
@@ -117,7 +143,11 @@ namespace IrkutskPrototype
             Check((float)Get(z,"alertUntil")==0,"Ctrl movement makes no audible footsteps");
             InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(Key.W)); InputSystem.Update();
             Set(game,"footAt",0f); Call(game,"Walk");
-            Check((float)Get(z,"alertUntil")>Time.time,"ordinary footsteps alert nearby infected");
+            Check((float)Get(z,"suspicion")>0 && (float)Get(z,"alertUntil")==0,"one footstep causes suspicion without immediate search");
+            Set(game,"footAt",0f); Call(game,"Walk");
+            Check((float)Get(z,"investigateAt")>Time.time && (float)Get(z,"alertUntil")==0,"repeated footsteps schedule delayed search");
+            z.transform.rotation=Quaternion.Euler(0,180,0); Set(z,"investigateAt",Time.time-.01f); Call(z,"Update");
+            Check((float)Get(z,"alertUntil")>Time.time,"search starts after reaction delay");
             InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState()); InputSystem.Update();
             Teleport(game,new Vector3(0,0,5.5f)); Set(z,"alertUntil",0f); z.transform.rotation=Quaternion.identity;
             Call(z,"Update"); Check((float)Get(z,"alertUntil")>Time.time,"infected sees player in view cone");

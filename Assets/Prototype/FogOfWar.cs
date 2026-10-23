@@ -55,7 +55,8 @@ namespace IrkutskPrototype
         {
             int i=Index(point);
             if(i<0 || pixels[i].g==0 || game==null) return false;
-            if(!Sight.InCone(game.Target,game.IsDriving?game.Car.forward:game.Hero.forward,point,game.IsDriving?14:Sight.HeroRange,Sight.HeroAngle)) return false;
+            float personal=game.IsDriving?2.2f:1.5f;
+            if(Vector2.Distance(new Vector2(point.x,point.z),new Vector2(game.Target.x,game.Target.z))>personal && !Sight.InCone(game.Target,game.IsDriving?game.Car.forward:game.Hero.forward,point,game.IsDriving?14:Sight.HeroRange,Sight.HeroAngle)) return false;
             // Grid cells can straddle a wall. Check the exact point for labels/actors as well.
             Vector3 eye=game.Target+Vector3.up*1.25f;
             Vector3 target=new Vector3(point.x,eye.y,point.z);
@@ -82,7 +83,7 @@ namespace IrkutskPrototype
             {
                 Vector3 destination=new Vector3(Origin.x+x+.5f,eye.y,Origin.y+z+.5f);
                 Vector3 delta=destination-eye; float distance=delta.magnitude;
-                if(!Sight.InCone(eye,game.IsDriving?game.Car.forward:game.Hero.forward,destination,radius,Sight.HeroAngle)) continue;
+                if(distance>(game.IsDriving?2.2f:1.5f) && !Sight.InCone(eye,game.IsDriving?game.Car.forward:game.Hero.forward,destination,radius,Sight.HeroAngle)) continue;
                 // Reveal the front surface of a wall, but not rooms behind it.
                 bool blocked=distance>.01f && Physics.Raycast(eye,delta.normalized,out var hit,distance,EscapeGame.SolidMask) && hit.distance<distance-.7f;
                 if(!blocked) pixels[z*Width+x]=new Color32(255,255,0,255);

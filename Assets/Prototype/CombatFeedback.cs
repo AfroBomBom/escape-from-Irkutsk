@@ -13,9 +13,11 @@ namespace IrkutskPrototype
             hitbox.size=new Vector3(1.8f,1.5f,3.5f); hitbox.isTrigger=true;
         }
         public void SoldierShot(HumanAgent soldier)
+        { NpcShot(soldier,driving?Car:Hero); }
+        public void NpcShot(HumanAgent soldier,Transform target)
         {
             Vector3 origin=soldier.transform.position+Vector3.up*1.15f;
-            Vector3 aim=Target+Vector3.up*(driving?.8f:1)-origin;
+            Vector3 aim=target.position+Vector3.up*(target==Car?.8f:1)-origin;
             Vector3 direction=Quaternion.Euler(Random.Range(-2f,2f),Random.Range(-5f,5f),0)*aim.normalized;
             LastSoldierDirection=direction; SoldierTracers++;
             var hits=Physics.RaycastAll(origin,direction,24,~0,QueryTriggerInteraction.Collide);
@@ -25,14 +27,23 @@ namespace IrkutskPrototype
             {
                 if(hit.collider.gameObject==soldier.gameObject) continue;
                 end=hit.point;
-                if(hit.collider.gameObject==Hero.gameObject || hit.collider.gameObject==Car.gameObject) { Damage(8); break; }
-                if(hit.collider.gameObject.layer==8 || hit.collider.GetComponent<Infected>() || hit.collider.GetComponent<HumanAgent>()) break;
+                if(hit.collider.gameObject==Hero.gameObject || hit.collider.gameObject==Car.gameObject) { if(soldier.Role==HumanRole.Medic) Dart(); else Damage(8); break; }
+                var z=hit.collider.GetComponent<Infected>();
+                if(z) { z.Hit(soldier.Role==HumanRole.Medic?0:20,soldier.Role==HumanRole.Medic?1.2f:.2f,direction*.1f,origin); break; }
+                var person=hit.collider.GetComponent<HumanAgent>();
+                if(person)
+                {
+                    if(!soldier.IsPatrol || !person.IsPatrol)
+                    { if(soldier.Role==HumanRole.Medic) person.Stun(1.2f); else person.Hit(15,false,soldier.transform); }
+                    break;
+                }
+                if(hit.collider.gameObject.layer==8) break;
             }
             var tracer=new GameObject("Soldier tracer"); tracer.transform.position=origin;
             var line=tracer.AddComponent<LineRenderer>(); line.sharedMaterial=amber; line.startWidth=.09f; line.endWidth=.04f;
             line.generateLightingData=true;
             line.positionCount=2; line.SetPosition(0,origin); line.SetPosition(1,end);
-            Fog.RegisterDynamic(tracer); Destroy(tracer,.22f); Noise(origin,25);
+            Fog.RegisterDynamic(tracer); Destroy(tracer,.22f); Noise(origin,12);
             sound.PlayOneShot(shotClip,.45f);
         }
         void ShowDamage(float damage,string kind)

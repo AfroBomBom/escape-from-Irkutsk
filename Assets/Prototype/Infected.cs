@@ -6,33 +6,57 @@ namespace IrkutskPrototype
     public sealed class Infected : MonoBehaviour
     {
         public bool Downed { get; private set; }
-        public string Status => Time.time<stunnedUntil?"ОГЛУШЁН":alertUntil>Time.time?"! ПОИСК":"";
+        public string Status => Time.time<stunnedUntil?"ОГЛУШЁН":alertUntil>Time.time?"! ПОИСК":Time.time-lastHeard<3 && suspicion>0?"? ШУМ":"";
         CharacterController controller;
         Vector3 home, destination;
         float health=100, stunnedUntil, alertUntil, biteAt, planAt, idleAt;
+        float suspicion,lastHeard=-10,investigateAt;
+        Vector3 pendingNoise;
         readonly Queue<Vector3> route=new Queue<Vector3>();
         void Start() { controller=GetComponent<CharacterController>(); home=transform.position; destination=home; }
-        public void Hear(Vector3 point)
-        { if(Downed) return; destination=point; alertUntil=Time.time+8; planAt=0; }
-        public void Hit(float damage,float stun,Vector3 push)
+        public void Hear(Vector3 point,float radius=4)
+        {
+            float reach=Mathf.Min(radius,9);
+            if(Physics.Linecast(transform.position+Vector3.up,point+Vector3.up,EscapeGame.SolidMask)) reach*=.45f;
+            if(Downed || Vector3.Distance(transform.position,point)>reach) return;
+            if(Time.time-lastHeard>3) suspicion=0;
+            lastHeard=Time.time; pendingNoise=point; suspicion+=radius>=10?1:.55f;
+            if(suspicion>=1 && investigateAt<=0) investigateAt=Time.time+.9f;
+        }
+        public void Hit(float damage,float stun,Vector3 push,Vector3? source=null)
         {
             if(Downed) return;
             health-=damage; stunnedUntil=Time.time+stun;
             if(controller==null) controller=GetComponent<CharacterController>();
-            controller.Move(push); Hear(EscapeGame.Instance.Target);
+            controller.Move(push); destination=source??EscapeGame.Instance.Target; alertUntil=Time.time+4; planAt=0;
             if(health<=0) { Downed=true; controller.enabled=false; transform.rotation=Quaternion.Euler(90,transform.eulerAngles.y,0); transform.position+=Vector3.up*.25f; }
         }
         void Update()
         {
             var game=EscapeGame.Instance;
             if(game==null || game.IsOver || Downed || Time.time<stunnedUntil) return;
-            Vector3 target=game.Target, delta=target-transform.position;
+            if(investigateAt>0 && Time.time>=investigateAt) { destination=pendingNoise; alertUntil=Time.time+4; planAt=0; investigateAt=0; suspicion=0; }
+            Transform victim=game.IsDriving?game.Car:game.Hero;
+            float nearest=Sight.CanSee(transform,victim.position,Sight.InfectedRange,Sight.InfectedAngle)?Vector3.Distance(transform.position,victim.position):float.MaxValue;
+            foreach(var human in game.Humans)
+                if(!human.Downed && Sight.CanSee(transform,human.transform.position,Sight.InfectedRange,Sight.InfectedAngle))
+                { float d=Vector3.Distance(transform.position,human.transform.position); if(d<nearest) { victim=human.transform; nearest=d; } }
+            Vector3 target=victim.position, delta=target-transform.position;
             float distance=delta.magnitude;
             bool sees=Sight.CanSee(transform,target,Sight.InfectedRange,Sight.InfectedAngle);
             if(sees) { destination=target; alertUntil=Time.time+6; }
             bool alert=Time.time<alertUntil;
-            if(distance<(game.IsDriving?2.6f:1.35f) && sees)
-            { if(Time.time>=biteAt) { game.Damage(game.IsDriving?7:12,!game.IsDriving); biteAt=Time.time+1; } return; }
+            if(distance<(victim==game.Car?2.6f:1.35f) && sees)
+            {
+                if(Time.time>=biteAt)
+                {
+                    var human=victim.GetComponent<HumanAgent>();
+                    if(human) { game.ObserveAggression(transform); human.Hit(12,false,transform); }
+                    else game.Damage(game.IsDriving?7:12,!game.IsDriving);
+                    biteAt=Time.time+1;
+                }
+                return;
+            }
             if(!alert && Time.time>idleAt)
             { destination=home+new Vector3(Mathf.Sin(Time.time*.5f+home.x)*3,0,Mathf.Cos(Time.time*.4f+home.z)*3); idleAt=Time.time+4; }
             Vector3 direction=destination-transform.position; direction.y=0;

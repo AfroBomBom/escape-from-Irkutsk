@@ -16,7 +16,7 @@ namespace IrkutskPrototype
         public static void Run(EscapeGame g)
         {
             var bag=(List<int>)Read(g,"bag");
-            Assert(g.Humans.Count==3 && g.Money==60,"civilian and patrol spawned without merchant");
+            Assert(g.Humans.Count==4 && g.Money==60,"civilian, patrol and marauder spawned without merchant");
             g.AcceptQuest(); var medicine=g.ExtraItems.Find(i=>!i.Owned && i.Kind==4);
             Move(g,medicine.transform.position); Call(g,"Interact");
             Assert(bag.Contains(4),"free medicine can be picked up");
@@ -29,7 +29,7 @@ namespace IrkutskPrototype
             Set(g,"breakProgress",0f); Move(g,new Vector3(-8,0,2));
             bag.Add(0); bag.Add(1);
             Assert(!g.LootStore() && g.Money==95,"full inventory blocks theft without charging"); bag.Clear();
-            Assert(g.LootStore() && g.Reputation==-6 && g.Money==85,"theft immediately applies fine and reputation loss"); bag.Clear();
+            Assert(g.LootStore() && g.Reputation==-6 && g.Money==95,"theft reduces reputation without monetary fine"); bag.Clear();
             var armor=g.ExtraItems.Find(i=>i.Kind==5); Move(g,armor.transform.position); Call(g,"Interact");
             Move(g,g.Car.position+Vector3.right*3); Call(g,"Interact");
             Assert(g.ArmorInstalled && g.ArmorPoints==50,"optional plate installs on car");
@@ -58,7 +58,7 @@ namespace IrkutskPrototype
             Set(g,"<PatrolHostile>k__BackingField",false); Set(g,"detainProgress",0f); Set(g,"scanProgress",0f);
             var victim=UnityEngine.Object.Instantiate(g.Citizen.gameObject); victim.transform.position=new Vector3(28,0,-22);
             int rep=g.Reputation; victim.GetComponent<HumanAgent>().Hit(150);
-            Assert(g.Reputation==rep-25 && g.Money==25,"civilian kill applies reputation and money penalty");
+            Assert(g.Reputation==rep-25 && g.Money==35,"civilian kill applies reputation and money penalty");
             victim.GetComponent<HumanAgent>().Hit(150);
             Assert(g.Reputation==rep-25,"dead civilian cannot generate repeated penalties"); UnityEngine.Object.Destroy(victim);
             Set(g,"<PatrolHostile>k__BackingField",false);
