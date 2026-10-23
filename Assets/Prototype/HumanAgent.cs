@@ -28,7 +28,7 @@ namespace IrkutskPrototype
         {
             if(Downed) return;
             Health-=damage*(Role==HumanRole.Soldier?.5f:Role==HumanRole.Medic?.8f:1);
-            if(IsPatrol) { if(playerCaused) Game.PatrolAttacked(); else if(attacker) Game.RegisterThreat(attacker); }
+            if(IsPatrol) { if(playerCaused) Game.PatrolAttacked(this); else if(attacker) { Game.RegisterThreat(attacker); AlertTo(attacker); } }
             if(Health<=0)
             {
                 Downed=true; controller.enabled=false; transform.rotation=Quaternion.Euler(90,transform.eulerAngles.y,0); transform.position+=Vector3.up*.2f;
@@ -38,6 +38,13 @@ namespace IrkutskPrototype
         public void Detain() { IsDetained=true; State="В карантин"; CurrentTarget=null; }
         public void Stun(float seconds) { stunnedUntil=Time.time+seconds; }
         public bool Ignores(Transform target)=>target==ignored && Time.time<ignoreUntil;
+        public void AlertTo(Transform target)
+        {
+            if(Downed || IsDetained || !Game.Alive(target)) return;
+            CurrentTarget=target; lastSeen=target.position; searchUntil=Time.time+4;
+            scanTime=bindTime=coverTime=0; routeAt=0; route.Clear();
+            State="Поиск нападавшего";
+        }
         public void MoveTo(Vector3 goal,float stop=1)
         {
             Vector3 delta=goal-transform.position; delta.y=0; if(delta.magnitude<stop) return;
@@ -81,7 +88,7 @@ namespace IrkutskPrototype
             State=threat?"Угроза":Role==HumanRole.Medic?"Проверка":"Прикрытие";
             if(Game.IsHero(CurrentTarget))
             {
-                if(Role==HumanRole.Medic && (threat || Game.Scanned) && distance<7 && !Game.IsDriving && Time.time>=shotAt) { Game.Dart(); shotAt=Time.time+5; }
+                if(Role==HumanRole.Medic && (threat || Game.Scanned) && distance<7 && !Game.IsDriving && Time.time>=shotAt) { Game.NpcShot(this,CurrentTarget); shotAt=Time.time+5; }
                 if(Role==HumanRole.Soldier && threat && Time.time>=shotAt) { Game.NpcShot(this,CurrentTarget); shotAt=Time.time+.8f; }
                 if(Role==HumanRole.Soldier && !threat && !Game.Scanned)
                 {

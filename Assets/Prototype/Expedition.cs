@@ -137,9 +137,16 @@ namespace IrkutskPrototype
         public void ReportGunfire(Vector3 origin)
         {
             foreach(var person in Humans)
-                if(!person.Downed && person.IsPatrol && Sight.CanSee(person.transform,origin,12,Sight.HumanAngle)) PatrolHostile=true;
+                if(!person.Downed && person.IsPatrol && Sight.CanSee(person.transform,origin,12,Sight.HumanAngle)) { PatrolAttacked(person); break; }
         }
-        public void PatrolAttacked() { PatrolHostile=true; }
+        public void PatrolAttacked(HumanAgent witness=null)
+        {
+            PatrolHostile=true;
+            if(witness==null) return;
+            Transform attacker=driving?Car:Hero;
+            foreach(var person in Humans)
+                if(person.IsPatrol && Vector3.Distance(person.transform.position,witness.transform.position)<=12) person.AlertTo(attacker);
+        }
         public void Dart()
         { if((heroStunUntil>0 && Time.time<heroStunUntil+2) || IsOver) return; heroStunUntil=Time.time+1.2f; Say("Усыпляющий дротик! Оглушение 1,2 с"); }
         void TickExpedition()
@@ -157,7 +164,7 @@ namespace IrkutskPrototype
             if(!driving && !Scanned && !Medic.Downed && (Medic.CurrentTarget==null || IsHero(Medic.CurrentTarget)) && Sight.CanSee(Medic.transform,Hero.position,Sight.ScannerRange,Sight.HumanAngle))
             {
                 scanProgress+=Time.deltaTime;
-                if(scanProgress>=2) { Scanned=true; Change(0,0,Sick?"Сканирование: заражён, патруль открывает огонь":"Сканирование: здоров, попытка задержания"); if(Sick) PatrolHostile=true; }
+                if(scanProgress>=2) { Scanned=true; Change(0,0,Sick?"Сканирование: заражён, патруль открывает огонь":"Сканирование: здоров, попытка задержания"); if(Sick) PatrolAttacked(Medic); }
             }
             else if(!Scanned) scanProgress=0;
             bool close=!driving && Scanned && !PatrolHostile && ((!Medic.Downed && Sight.CanSee(Medic.transform,Hero.position,1.5f,Sight.HumanAngle)) || (!Soldier.Downed && Sight.CanSee(Soldier.transform,Hero.position,1.5f,Sight.HumanAngle)));
