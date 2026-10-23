@@ -112,6 +112,7 @@ namespace IrkutskPrototype
         }
         void Run(EscapeGame game)
         {
+            BehaviorTreeChecks.Verify();
             Check(game.Parts.Count==4 && game.Zombies.Count==8,"world and actors spawned");
             foreach(var enemy in game.Zombies) enemy.enabled=false;
             foreach(var human in game.Humans) human.enabled=false;

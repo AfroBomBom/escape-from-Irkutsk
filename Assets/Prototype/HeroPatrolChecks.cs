@@ -52,6 +52,11 @@ namespace IrkutskPrototype
             game.RegisterThreat(distractor.transform);
             Check(game.SelectPatrolTarget(game.Soldier)==game.Hero,"nearer infected does not interrupt current visible hero engagement");
             distractor.gameObject.SetActive(false);
+            Place(game.Hero,new Vector3(-28,0,-22));
+            yield return new WaitForSeconds(.2f);
+            Check(game.Soldier.State=="Поиск" && game.Soldier.CurrentTarget==game.Hero,"tree searches last known hero position after visual contact is lost");
+            yield return new WaitForSeconds(4.2f);
+            Check(game.Soldier.CurrentTarget==null && game.Soldier.State=="Обход","tree returns to patrol when target memory expires");
             // Reset hostility and give the medic a healthy person to check.
             Set(game,"<PatrolHostile>k__BackingField",false); Set(game,"<Scanned>k__BackingField",false);
             Set(game,"infection",0f); Set(game,"scanProgress",0f); Set(game,"heroStunUntil",0f);

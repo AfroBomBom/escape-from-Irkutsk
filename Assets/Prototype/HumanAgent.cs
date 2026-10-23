@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using static IrkutskPrototype.Behaviors;
 namespace IrkutskPrototype
 {
     public enum HumanRole { Civilian, Medic, Soldier, Marauder }
@@ -14,6 +15,9 @@ namespace IrkutskPrototype
         public float Health { get; private set; }=100;
         public Transform CurrentTarget { get; private set; }
         public string State { get; private set; }="Обход";
+        BehaviorNode behavior;
+        bool targetVisible;
+        public BehaviorNode Behavior => behavior ?? (behavior=BuildBehavior());
         CharacterController controller;
         Queue<Vector3> route=new Queue<Vector3>();
         Vector3 lastSeen,plannedGoal;
@@ -69,60 +73,101 @@ namespace IrkutskPrototype
         }
         void Update()
         {
-            if(Game==null || Game.IsOver || Downed || Time.time<stunnedUntil) return;
-            if(IsDetained) { MoveTo(new Vector3(27,0,17)); return; }
-            if(Role==HumanRole.Civilian) { State="Мирный"; return; }
-            if(Role==HumanRole.Marauder) { MarauderUpdate(); return; }
+            Behavior.Tick();
+        }
+        BehaviorNode BuildBehavior()
+        {
+            // Priority runs from top to bottom; action timers and target memory
+            // belong to this agent, never to a shared tree instance.
+            return Select("Поведение NPC",
+                When("Недоступен / оглушён",()=>Game==null || Game.IsOver || Downed || Time.time<stunnedUntil,
+                    Run("Ожидать",()=>{})),
+                When("Задержан",()=>IsDetained,Run("Идти в карантин",()=>MoveTo(new Vector3(27,0,17)))),
+                When("Мирный житель",()=>Role==HumanRole.Civilian,Run("Ждать помощи",()=>State="Мирный")),
+                When("Мародёр",()=>Role==HumanRole.Marauder,Run("Искать и атаковать",MarauderUpdate)),
+                Steps("Патруль",
+                    Do("Обзор, память и лечение",ObserveAndSupport),
+                    Select("Выбрать задачу",
+                        When("Целей нет",()=>!CurrentTarget,Run("Обходить маршрут",Roam)),
+                        When("Цель потеряна",()=>!targetVisible,Run("Искать по последней позиции",Search)),
+                        Steps("Видимая цель",
+                            Do("Повернуться к цели",FaceTarget),
+                            Select("Оценить угрозу",
+                                When("Подтверждённая угроза",()=>Game.Threat(CurrentTarget),Run("Бой и дистанция",Fight)),
+                                When("Герой в машине",()=>Game.IsHero(CurrentTarget) && Game.IsDriving,Run("Пропустить мирную машину",DropAndRoam)),
+                                When("Проверенный герой",()=>Game.IsHero(CurrentTarget) && Game.Scanned,Run("Оглушить и задержать героя",DetainHero)),
+                                When("Проверенный NPC",()=>!Game.IsHero(CurrentTarget) && Game.Checked(CurrentTarget),Run("Задержать NPC",DetainNpc)),
+                                When("Врач проверяет",()=>Role==HumanRole.Medic,Run("Подойти и сканировать",ScanTarget)),
+                                Run("Прикрывать проверку",CoverTarget))))));
+        }
+        void ObserveAndSupport()
+        {
             Transform seen=Game.SelectPatrolTarget(this);
             if(seen) { if(seen!=CurrentTarget) { scanTime=0; bindTime=0; coverTime=0; } CurrentTarget=seen; lastSeen=seen.position; searchUntil=Time.time+4; }
             else { scanTime=0; bindTime=0; }
             if(CurrentTarget && !Game.Alive(CurrentTarget)) CurrentTarget=null;
             if(!seen && Time.time>=searchUntil) CurrentTarget=null;
+            targetVisible=seen && CurrentTarget==seen;
             if(Role==HumanRole.Medic && Time.time>healAt)
             { Health=Mathf.Min(100,Health+15); if(!Game.Soldier.Downed && Vector3.Distance(transform.position,Game.Soldier.transform.position)<3) Game.Soldier.Health=Mathf.Min(100,Game.Soldier.Health+15); healAt=Time.time+8; }
-            if(!CurrentTarget) { Roam(); return; }
-            if(!seen) { State="Поиск"; MoveTo(lastSeen); return; }
-            bool threat=Game.Threat(CurrentTarget); float distance=Vector3.Distance(transform.position,CurrentTarget.position);
+        }
+        void Search() { State="Поиск"; MoveTo(lastSeen); }
+        void FaceTarget()
+        {
             Vector3 facing=CurrentTarget.position-transform.position; facing.y=0;
             if(facing.sqrMagnitude>.01f) transform.rotation=Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(facing),Time.deltaTime*6);
-            State=threat?"Угроза":Role==HumanRole.Medic?"Проверка":"Прикрытие";
-            if(Game.IsHero(CurrentTarget))
+        }
+        void Fight()
+        {
+            State="Угроза";
+            bool hero=Game.IsHero(CurrentTarget);
+            float distance=Vector3.Distance(transform.position,CurrentTarget.position);
+            bool mayFire=Role==HumanRole.Soldier || !hero || (distance<7 && !Game.IsDriving);
+            if(mayFire && Time.time>=shotAt)
+            { Game.NpcShot(this,CurrentTarget); shotAt=Time.time+(Role==HumanRole.Soldier?.8f:hero?5:1.3f); }
+            if(!hero && distance<2.5f)
             {
-                if(Role==HumanRole.Medic && (threat || Game.Scanned) && distance<7 && !Game.IsDriving && Time.time>=shotAt) { Game.NpcShot(this,CurrentTarget); shotAt=Time.time+5; }
-                if(Role==HumanRole.Soldier && threat && Time.time>=shotAt) { Game.NpcShot(this,CurrentTarget); shotAt=Time.time+.8f; }
-                if(Role==HumanRole.Soldier && !threat && !Game.Scanned)
-                {
-                    coverTime+=Time.deltaTime;
-                    if(coverTime>6) { ignored=CurrentTarget; ignoreUntil=Time.time+10; CurrentTarget=null; coverTime=0; Roam(); return; }
-                }
-                if(!Game.IsDriving || threat) MoveTo(CurrentTarget.position,threat?(Role==HumanRole.Soldier?6:4):!Game.Scanned?(Role==HumanRole.Soldier?3:2.4f):1.1f);
-                else { CurrentTarget=null; Roam(); }
-                return;
+                Vector3 away=transform.position-CurrentTarget.position; away.y=0; away.Normalize();
+                if(!Physics.SphereCast(transform.position+Vector3.up,.4f,away,out _,.7f,EscapeGame.SolidMask)) controller.Move((away*1.7f+Vector3.down*8)*Time.deltaTime);
             }
-            if(threat)
+            else MoveTo(CurrentTarget.position,Role==HumanRole.Soldier?6:4);
+        }
+        void DropAndRoam() { CurrentTarget=null; Roam(); }
+        void CoverTarget()
+        {
+            State="Прикрытие"; coverTime+=Time.deltaTime;
+            if(coverTime>6)
             {
-                if(Time.time>=shotAt) { Game.NpcShot(this,CurrentTarget); shotAt=Time.time+(Role==HumanRole.Medic?1.3f:.8f); }
-                if(distance<2.5f)
-                {
-                    Vector3 away=-facing.normalized;
-                    if(!Physics.SphereCast(transform.position+Vector3.up,.4f,away,out _,.7f,EscapeGame.SolidMask)) controller.Move((away*1.7f+Vector3.down*8)*Time.deltaTime);
-                }
-                else MoveTo(CurrentTarget.position,Role==HumanRole.Soldier?6:4);
-                return;
+                ignored=CurrentTarget; ignoreUntil=Time.time+10; coverTime=0; DropAndRoam(); return;
             }
-            if(Role==HumanRole.Soldier && !Game.Checked(CurrentTarget))
-            {
-                coverTime+=Time.deltaTime;
-                if(coverTime>6) { ignored=CurrentTarget; ignoreUntil=Time.time+10; CurrentTarget=null; coverTime=0; Roam(); return; }
-            }
-            if(Role==HumanRole.Medic && !Game.Checked(CurrentTarget) && distance<=Sight.ScannerRange)
+            MoveTo(CurrentTarget.position,3);
+        }
+        void ScanTarget()
+        {
+            float distance=Vector3.Distance(transform.position,CurrentTarget.position);
+            State=distance<=Sight.ScannerRange?"Сканирование":"К проверке";
+            // Hero scan and capture outcomes are shared with the expedition HUD.
+            if(!Game.IsHero(CurrentTarget) && distance<=Sight.ScannerRange)
             { State="Сканирование"; scanTime+=Time.deltaTime; if(scanTime>=2) { Game.CompleteNpcScan(CurrentTarget); scanTime=0; } }
             else if(distance>Sight.ScannerRange) scanTime=0;
+            MoveTo(CurrentTarget.position,Game.Checked(CurrentTarget)?1.1f:2.4f);
+        }
+        void DetainHero()
+        {
+            State="Задержание";
+            if(Role==HumanRole.Medic && Vector3.Distance(transform.position,CurrentTarget.position)<7 && Time.time>=shotAt)
+            { Game.NpcShot(this,CurrentTarget); shotAt=Time.time+5; }
+            MoveTo(CurrentTarget.position,1.1f);
+        }
+        void DetainNpc()
+        {
+            State="К задержанию";
+            float distance=Vector3.Distance(transform.position,CurrentTarget.position);
             var person=CurrentTarget.GetComponent<HumanAgent>();
-            if(person && Game.Checked(CurrentTarget) && !Game.Threat(CurrentTarget) && distance<1.5f)
+            if(person && distance<1.5f)
             { State="Задержание"; bindTime+=Time.deltaTime; if(bindTime>=3) { person.Detain(); CurrentTarget=null; } }
             else bindTime=0;
-            if(CurrentTarget) MoveTo(CurrentTarget.position,!Game.Checked(CurrentTarget)?(Role==HumanRole.Soldier?3:2.4f):1.1f);
+            if(CurrentTarget) MoveTo(CurrentTarget.position,1.1f);
         }
         void MarauderUpdate()
         {
