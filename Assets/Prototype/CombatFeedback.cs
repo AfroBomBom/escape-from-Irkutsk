@@ -44,7 +44,7 @@ namespace IrkutskPrototype
             var line=tracer.AddComponent<LineRenderer>(); line.sharedMaterial=amber; line.startWidth=.09f; line.endWidth=.04f;
             line.generateLightingData=true;
             line.positionCount=2; line.SetPosition(0,origin); line.SetPosition(1,end);
-            Fog.RegisterDynamic(tracer); Destroy(tracer,.22f); Noise(origin,12);
+            Fog.RegisterDynamic(tracer); Destroy(tracer,.22f); Noise(origin,12,soldier.transform,NoiseKind.Gunshot);
             sound.PlayOneShot(shotClip,.45f);
         }
         void ShowDamage(float damage,string kind)

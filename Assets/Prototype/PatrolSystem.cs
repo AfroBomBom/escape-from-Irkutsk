@@ -29,6 +29,12 @@ namespace IrkutskPrototype
             foreach(var person in Humans)
                 if(person.IsPatrol && person.gameObject.activeInHierarchy && Vector3.Distance(person.transform.position,witness.transform.position)<=12) person.AlertTo(target);
         }
+        public void ShareSighting(HumanAgent witness,Transform target,Vector3 position)
+        {
+            foreach(var person in Humans)
+                if(person!=witness && person.IsPatrol && person.enabled && person.gameObject.activeInHierarchy && Vector3.Distance(person.transform.position,witness.transform.position)<=12)
+                    person.ReceiveReport(target,position);
+        }
         public void WarnCivilians(Vector3 origin)
         { foreach(var human in Humans) human.HearGunfire(origin); }
         public void CompleteNpcScan(Transform target)

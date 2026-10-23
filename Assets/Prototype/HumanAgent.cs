@@ -47,12 +47,9 @@ namespace IrkutskPrototype
         public bool Ignores(Transform target)=>target==ignored && Time.time<ignoreUntil;
         public void AlertTo(Transform target)
         {
-            if(Downed || IsDetained || !Game.Alive(target)) return;
-            CurrentTarget=target; lastSeen=target.position; searchUntil=Time.time+4;
-            scanTime=bindTime=coverTime=0; routeAt=0; route.Clear();
-            State="Поиск нападавшего";
+            if(target) ReceiveReport(target,target.position);
         }
-        public void MoveTo(Vector3 goal,float stop=1)
+        public void MoveTo(Vector3 goal,float stop=1,float pace=2.1f)
         {
             Vector3 delta=goal-transform.position; delta.y=0; if(delta.magnitude<stop) return;
             if(Physics.SphereCast(transform.position+Vector3.up,.4f,delta.normalized,out _,delta.magnitude,EscapeGame.SolidMask))
@@ -64,7 +61,7 @@ namespace IrkutskPrototype
             else route.Clear();
             if(delta.sqrMagnitude<.02f) return;
             transform.rotation=Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(delta),Time.deltaTime*6);
-            controller.Move((NpcTactics.Separate(transform,delta)*2.1f+Vector3.down*8)*Time.deltaTime);
+            controller.Move((NpcTactics.Separate(transform,delta)*pace+Vector3.down*8)*Time.deltaTime);
         }
         void Roam()
         {
@@ -92,6 +89,8 @@ namespace IrkutskPrototype
                 When("Мародёр",()=>Role==HumanRole.Marauder,
                     Steps("Тактика мародёра",Do("Обзор и память",ObserveMarauder),
                         Select("Решение мародёра",
+                            When("Есть источник шума",()=>!CurrentTarget && HasSoundClue,Run("Осторожно проверить",InvestigateSound)),
+                            When("Слабый звук",()=>!CurrentTarget && ListeningToWeakSound(),Run("Прислушаться",ListenToSound)),
                             When("Нет цели",()=>!CurrentTarget,Run("Обход",Roam)),
                             When("Потерял цель",()=>!targetVisible,Run("Искать",Search)),
                             When("Сильно ранен",()=>Health<40,Run("Отступать с огнём",RetreatFighting)),
@@ -100,6 +99,8 @@ namespace IrkutskPrototype
                     Do("Обзор, память и лечение",ObserveAndSupport),
                     Select("Выбрать задачу",
                         When("Напарник ранен",NeedsSupport,Run("Подойти для лечения",AssistPartner)),
+                        When("Есть источник шума",()=>!CurrentTarget && HasSoundClue,Run("Осторожно проверить",InvestigateSound)),
+                        When("Слабый звук",()=>!CurrentTarget && ListeningToWeakSound(),Run("Прислушаться",ListenToSound)),
                         When("Целей нет",()=>!CurrentTarget,Run("Обходить маршрут",Roam)),
                         When("Цель потеряна",()=>!targetVisible,Run("Искать по последней позиции",Search)),
                         Steps("Видимая цель",
@@ -115,7 +116,7 @@ namespace IrkutskPrototype
         void ObserveAndSupport()
         {
             Transform seen=Game.SelectPatrolTarget(this);
-            if(seen) { if(seen!=CurrentTarget) { scanTime=0; bindTime=0; coverTime=0; } CurrentTarget=seen; lastSeen=seen.position; searchUntil=Time.time+4; }
+            if(seen) { if(seen!=CurrentTarget) { scanTime=0; bindTime=0; coverTime=0; } CurrentTarget=seen; lastSeen=seen.position; searchUntil=Time.time+4; SawTarget(seen); }
             else { scanTime=0; bindTime=0; }
             if(CurrentTarget && !Game.Alive(CurrentTarget)) CurrentTarget=null;
             if(!seen && Time.time>=searchUntil) CurrentTarget=null;
@@ -127,7 +128,7 @@ namespace IrkutskPrototype
         {
             State="Поиск";
             if(Vector3.Distance(transform.position,lastSeen)<1.2f) transform.Rotate(0,55*Time.deltaTime,0);
-            else MoveTo(lastSeen);
+            else MoveTo(lastSeen,1,1.6f);
         }
         void FaceTarget()
         {

@@ -214,7 +214,7 @@ namespace IrkutskPrototype
                 }
             }
             if(input.sqrMagnitude>.1f && !quiet && Time.time>=footAt)
-            { Noise(Hero.position,sprint?6:2.5f); footAt=Time.time+(sprint?.3f:.5f); }
+            { Noise(Hero.position,sprint?6:2.5f,Hero,NoiseKind.Movement); footAt=Time.time+(sprint?.3f:.5f); }
         }
         void Drive()
         {
@@ -225,7 +225,7 @@ namespace IrkutskPrototype
             if(travel.sqrMagnitude>0 && Physics.BoxCast(Car.position+Vector3.up*.7f,new Vector3(.85f,.6f,1.65f),travel.normalized,out _,Car.rotation,travel.magnitude+.1f,SolidMask))
             { DamageCar(Mathf.Abs(speed)*.8f); speed=-speed*.25f; Say("Столкновение! Береги машину"); }
             else Car.position+=travel;
-            if(Mathf.Abs(speed)>1) Noise(Car.position,10);
+            if(Mathf.Abs(speed)>1) Noise(Car.position,10,Car,NoiseKind.Engine);
             foreach(var z in Zombies)
                 if(!z.Downed && Vector3.Distance(z.transform.position,Car.position)<2.3f && Mathf.Abs(speed)>5)
                 { z.Hit(60,2.5f,Car.forward*2); DamageCar(3); }
@@ -242,7 +242,7 @@ namespace IrkutskPrototype
             {
                 if(bag.Contains(5)) { InstallArmor(); return; }
                 int index=bag.FindIndex(k=>k<4);
-                if(index>=0) { int k=bag[index]; bag.RemoveAt(index); installed[k]=true; Noise(Car.position,6); Say("Установлено: "+partNames[k]); return; }
+                if(index>=0) { int k=bag[index]; bag.RemoveAt(index); installed[k]=true; Noise(Car.position,6,Hero,NoiseKind.Work); Say("Установлено: "+partNames[k]); return; }
                 if(InstalledCount()==4) { driving=true; Hero.gameObject.SetActive(false); Say("W/S — газ и тормоз, A/D — поворот. На трассу!"); return; }
                 Say("Не хватает деталей. Ищи цветные кубы во дворах"); return;
             }
@@ -256,7 +256,7 @@ namespace IrkutskPrototype
         }
         void Punch()
         {
-            if(Time.time<attackAt) return; attackAt=Time.time+.6f; Noise(Hero.position,4); sound.PlayOneShot(hitClip,.4f);
+            if(Time.time<attackAt) return; attackAt=Time.time+.6f; Noise(Hero.position,4,Hero,NoiseKind.Impact); sound.PlayOneShot(hitClip,.4f);
             foreach(var z in Zombies)
                 if(!z.Downed && Vector3.Distance(Hero.position,z.transform.position)<2 && Vector3.Dot(Hero.forward,(z.transform.position-Hero.position).normalized)>.25f &&
                     !Physics.Linecast(Hero.position+Vector3.up,z.transform.position+Vector3.up,SolidMask))
@@ -269,7 +269,7 @@ namespace IrkutskPrototype
             if(Time.time<shotAt || reloadAt>0) return;
             if(ammo==0) { Say("Нет патронов — нажми R"); return; }
             ammo--; shotAt=Time.time+.35f; flashUntil=Time.time+.08f;
-            Noise(Hero.position,14); sound.PlayOneShot(shotClip,.65f);
+            Noise(Hero.position,14,Hero,NoiseKind.Gunshot); sound.PlayOneShot(shotClip,.65f);
             ReportGunfire(Hero.position);
             Vector3 origin=Hero.position+Vector3.up;
             var hits=Physics.RaycastAll(origin,Hero.forward,35);
@@ -291,10 +291,11 @@ namespace IrkutskPrototype
             line.SetPosition(0,origin+Hero.forward*.6f); line.SetPosition(1,end); Destroy(tracer,.09f);
             if(Fog!=null) Fog.RegisterDynamic(tracer);
         }
-        public void Noise(Vector3 position,float radius)
+        public void Noise(Vector3 position,float radius,Transform source=null,NoiseKind kind=NoiseKind.Unknown)
         {
             noisePosition=position; noiseRadius=radius; noiseUntil=Time.time+.45f;
             foreach(var z in Zombies) if(!z.Downed && Vector3.Distance(z.transform.position,position)<radius) z.Hear(position,radius);
+            foreach(var human in Humans) human.HearNoise(position,radius,source,kind);
         }
         public void Damage(float value,bool infect=false)
         { if(IsOver) return; if(driving) DamageCar(value); else { float before=hp; hp=Mathf.Max(0,hp-value); ShowDamage(before-hp,"ЗДОРОВЬЕ"); if(infect) infection=Mathf.Min(100,infection+8); } }

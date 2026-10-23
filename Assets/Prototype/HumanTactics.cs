@@ -77,7 +77,7 @@ namespace IrkutskPrototype
             Consider(Game.IsDriving?Game.Car:Game.Hero);
             foreach(var h in Game.Humans) if(h.IsPatrol) Consider(h.transform);
             foreach(var z in Game.Zombies) Consider(z.transform);
-            if(seen) { CurrentTarget=seen; lastSeen=seen.position; searchUntil=Time.time+4; }
+            if(seen) { CurrentTarget=seen; lastSeen=seen.position; searchUntil=Time.time+4; SawTarget(seen); }
             else if(!Game.Alive(CurrentTarget) || Time.time>=searchUntil) CurrentTarget=null;
             targetVisible=seen && CurrentTarget==seen;
         }

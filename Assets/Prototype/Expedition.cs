@@ -117,7 +117,7 @@ namespace IrkutskPrototype
             bag.Remove(5); ArmorInstalled=true; ArmorPoints=50;
             Box("Installed armor",new Vector3(-1.02f,.9f,0),new Vector3(.12f,.85f,2),steel,false,Car);
             Box("Installed armor",new Vector3(1.02f,.9f,0),new Vector3(.12f,.85f,2),steel,false,Car);
-            Fog.RegisterDynamic(Car.gameObject); Noise(Car.position,6); Say("Броня установлена: +50 защиты машине");
+            Fog.RegisterDynamic(Car.gameObject); Noise(Car.position,6,Hero,NoiseKind.Work); Say("Броня установлена: +50 защиты машине");
         }
         void DamageCar(float damage)
         {
@@ -158,7 +158,7 @@ namespace IrkutskPrototype
             if(!driving && !HeroStunned && !shopUnlocked && !InteractionOpen && Key(UnityEngine.InputSystem.Key.F) && Near(shopPosition))
             {
                 breakProgress+=Time.deltaTime;
-                if(Time.time>=breakNoiseAt) { Noise(shopPosition,8); breakNoiseAt=Time.time+.7f; }
+                if(Time.time>=breakNoiseAt) { Noise(shopPosition,8,Hero,NoiseKind.Work); breakNoiseAt=Time.time+.7f; }
                 if(breakProgress>=3) UnlockStore();
             }
             else breakProgress=0;
