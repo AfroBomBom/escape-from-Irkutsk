@@ -146,8 +146,9 @@ namespace IrkutskPrototype
             Box("Jacket",new Vector3(0,1,0),new Vector3(.65f,1,.4f),orange,false,Hero);
             Box("Head",new Vector3(0,1.7f,0),new Vector3(.4f,.4f,.4f),snow,false,Hero);
             Box("Backpack",new Vector3(0,1,-.32f),new Vector3(.55f,.6f,.25f),green,false,Hero);
-            arm=Box("Fist",new Vector3(-.43f,1,.3f),new Vector3(.2f,.25f,.45f),snow,false,Hero).transform;
-            gun=Box("Pistol",new Vector3(.4f,1,.4f),new Vector3(.15f,.2f,.55f),dark,false,Hero).transform;
+            arm=Box("Fist",new Vector3(-.43f,1.3f,.3f),new Vector3(.2f,.25f,.45f),snow,false,Hero).transform;
+            gun=Box("Pistol",new Vector3(.4f,1.3f,.4f),new Vector3(.15f,.2f,.55f),dark,false,Hero).transform;
+            Hero.gameObject.AddComponent<ActorPosture>();
             Vector3[] enemies={new Vector3(-18,0,10),new Vector3(13,0,10),new Vector3(20,0,-10),new Vector3(43,0,-3),new Vector3(59,0,2),new Vector3(70,0,-2),new Vector3(87,0,3),new Vector3(95,0,-3)};
             foreach(var p in enemies)
             {
@@ -177,6 +178,12 @@ namespace IrkutskPrototype
             if(IsOver) return;
             TickExpedition();
             if(IsOver) return;
+            if(!driving && !InteractionOpen && !BreakingIn && Time.time>=heroStunUntil && Press(UnityEngine.InputSystem.Key.C))
+            {
+                var posture=Hero.GetComponent<ActorPosture>();
+                if(!posture.TrySetCrouched(!posture.IsCrouched)) Say("Над головой препятствие: встать нельзя");
+                if(Fog) Fog.Refresh();
+            }
             if(!InteractionOpen && !BreakingIn && Time.time>=heroStunUntil) { if(driving) Drive(); else Walk(); }
             if(Press(UnityEngine.InputSystem.Key.E) && Time.time>=heroStunUntil) Interact();
             if(!driving && !InteractionOpen && !BreakingIn && Time.time>=heroStunUntil)
@@ -186,7 +193,7 @@ namespace IrkutskPrototype
                 if(Press(UnityEngine.InputSystem.Key.R) && ammo<6 && reloadAt==0) { reloadAt=Time.time+1.5f; Say("Перезарядка…"); }
             }
             if(reloadAt>0 && Time.time>=reloadAt) { ammo=6; reloadAt=0; }
-            arm.localPosition=new Vector3(-.43f,1,Time.time<attackAt-.32f?.75f:.3f);
+            arm.localPosition=new Vector3(-.43f,1.3f,Time.time<attackAt-.32f?.75f:.3f);
             if(hp<=0 || durability<=0) { dead=true; finalTime=Time.time-started; }
         }
         void LateUpdate() { if(view!=null) UpdateCamera(false); }
@@ -201,8 +208,9 @@ namespace IrkutskPrototype
         {
             Vector2 input=Movement();
             bool quiet=Key(UnityEngine.InputSystem.Key.LeftCtrl)||Key(UnityEngine.InputSystem.Key.RightCtrl);
-            bool sprint=!quiet && Key(UnityEngine.InputSystem.Key.LeftShift);
-            float pace=quiet?1.8f:sprint?6:3.6f;
+            bool crouched=Hero.GetComponent<ActorPosture>().IsCrouched;
+            bool sprint=!quiet && !crouched && Key(UnityEngine.InputSystem.Key.LeftShift);
+            float pace=quiet || crouched?1.8f:sprint?6:3.6f;
             Controller.Move((new Vector3(input.x,0,input.y)*pace+Vector3.down*8)*Time.deltaTime);
             if(Mouse.current!=null)
             {
@@ -214,7 +222,7 @@ namespace IrkutskPrototype
                 }
             }
             if(input.sqrMagnitude>.1f && !quiet && Time.time>=footAt)
-            { Noise(Hero.position,sprint?6:2.5f,Hero,NoiseKind.Movement); footAt=Time.time+(sprint?.3f:.5f); }
+            { Noise(Hero.position,crouched?1.25f:sprint?6:2.5f,Hero,NoiseKind.Movement); footAt=Time.time+(sprint?.3f:.5f); }
         }
         void Drive()
         {
@@ -259,10 +267,10 @@ namespace IrkutskPrototype
             if(Time.time<attackAt) return; attackAt=Time.time+.6f; Noise(Hero.position,4,Hero,NoiseKind.Impact); sound.PlayOneShot(hitClip,.4f);
             foreach(var z in Zombies)
                 if(!z.Downed && Vector3.Distance(Hero.position,z.transform.position)<2 && Vector3.Dot(Hero.forward,(z.transform.position-Hero.position).normalized)>.25f &&
-                    !Physics.Linecast(Hero.position+Vector3.up,z.transform.position+Vector3.up,SolidMask))
+                    !Physics.Linecast(ActorPosture.Muzzle(Hero),ActorPosture.Chest(z.transform),SolidMask))
                     z.Hit(25,.65f,Hero.forward*.45f);
             foreach(var human in Humans)
-                if(!human.Downed && Vector3.Distance(Hero.position,human.transform.position)<2 && Vector3.Dot(Hero.forward,(human.transform.position-Hero.position).normalized)>.25f && !Physics.Linecast(Hero.position+Vector3.up,human.transform.position+Vector3.up,SolidMask)) human.Hit(25);
+                if(!human.Downed && Vector3.Distance(Hero.position,human.transform.position)<2 && Vector3.Dot(Hero.forward,(human.transform.position-Hero.position).normalized)>.25f && !Physics.Linecast(ActorPosture.Muzzle(Hero),ActorPosture.Chest(human.transform),SolidMask)) human.Hit(25);
         }
         void Shoot()
         {
@@ -271,7 +279,7 @@ namespace IrkutskPrototype
             ammo--; shotAt=Time.time+.35f; flashUntil=Time.time+.08f;
             Noise(Hero.position,14,Hero,NoiseKind.Gunshot); sound.PlayOneShot(shotClip,.65f);
             ReportGunfire(Hero.position);
-            Vector3 origin=Hero.position+Vector3.up;
+            Vector3 origin=ActorPosture.Muzzle(Hero);
             var hits=Physics.RaycastAll(origin,Hero.forward,35);
             System.Array.Sort(hits,(a,b)=>a.distance.CompareTo(b.distance));
             Vector3 end=origin+Hero.forward*35;
@@ -328,7 +336,7 @@ namespace IrkutskPrototype
                 GUI.Label(new Rect(width-280,65+i*31,250,30),partNames[i]+" — "+state,small); }
             Panel(new Rect(18,height-110,700,92));
             GUI.Label(new Rect(32,height-102,680,26),driving?"W/S — газ / тормоз / задний ход   •   A/D — руль":"WASD — движение   •   Мышь — прицел   •   E — взять / установить / сесть",small);
-            GUI.Label(new Rect(32,height-76,680,26),driving?"Объезжай преграды. Зелёная линия — выход из города.":"Ctrl — тихий шаг   •   Shift — бег   •   ЛКМ / Space — удар",small);
+            GUI.Label(new Rect(32,height-76,680,26),driving?"Объезжай преграды. Зелёная линия — выход из города.":"Ctrl — тихо • Shift — бег • C — присесть • ЛКМ / Space — удар",small);
             GUI.Label(new Rect(32,height-50,680,26),driving?"F5 — начать заново":"ПКМ / Q — пистолет (оглушение)   •   R — перезарядка   •   F5 — заново",small);
             if(!driving)
             {
@@ -337,11 +345,13 @@ namespace IrkutskPrototype
                 GUI.Label(new Rect(width-280,height-70,252,46),bag.Count==0?"Пусто":string.Join(" • ",bag.ConvertAll(ItemName)),small);
                 if(Key(UnityEngine.InputSystem.Key.LeftCtrl)||Key(UnityEngine.InputSystem.Key.RightCtrl))
                     GUI.Label(new Rect(width/2-180,18,360,35),"ТИХИЙ ШАГ — тебя не слышно",normal);
+                else if(Hero.GetComponent<ActorPosture>().IsCrouched)
+                    GUI.Label(new Rect(width/2-180,18,360,35),"ПРИСЕД — ниже и тише",normal);
             }
             if(Time.time<messageUntil) { Panel(new Rect(width/2-280,height-168,560,44)); GUI.Label(new Rect(width/2-265,height-160,530,35),message,normal); }
             if(!driving && Vector3.Distance(Hero.position,Car.position)<4.2f)
                 GUI.Label(new Rect(width/2-220,height/2+105,440,35),bag.Count>0?"E — установить деталь":InstalledCount()==4?"E — сесть и уехать":"Машина: нужны ещё детали",normal);
-            foreach(var z in Zombies) if(!z.Downed && Vector3.Distance(Target,z.transform.position)<21 && (Fog==null || Fog.IsVisible(z.transform.position)))
+            foreach(var z in Zombies) if(!z.Downed && Vector3.Distance(Target,z.transform.position)<21 && (Fog==null || Fog.IsVisible(z.transform)))
             {
                 Vector3 p=view.WorldToScreenPoint(z.transform.position+Vector3.up*2.6f);
                 if(p.z>0) GUI.Label(new Rect(p.x/scale-45,(Screen.height-p.y)/scale,110,25),z.Status,small);

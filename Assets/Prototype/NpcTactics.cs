@@ -32,8 +32,8 @@ namespace IrkutskPrototype
         }
         public static bool FiringLane(Transform shooter,Transform target)
         {
-            Vector3 origin=shooter.position+Vector3.up*1.15f;
-            Vector3 aim=target.position+Vector3.up-origin;
+            Vector3 origin=ActorPosture.Muzzle(shooter);
+            Vector3 aim=Sight.AimPoint(shooter,target)-origin;
             var hits=Physics.RaycastAll(origin,aim.normalized,aim.magnitude+.1f,~0,QueryTriggerInteraction.Collide);
             System.Array.Sort(hits,(a,b)=>a.distance.CompareTo(b.distance));
             foreach(var hit in hits)

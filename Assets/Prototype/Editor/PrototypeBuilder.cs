@@ -29,7 +29,8 @@ namespace IrkutskPrototype
         public static void BuildWindows()
         {
             CreateScene();
-            var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes=new[]{ScenePath},locationPathName="Builds/Windows/EscapeFromIrkutsk.exe",target=BuildTarget.StandaloneWindows64,options=BuildOptions.Development });
+            CoverSetup.EnsureAssets();
+            var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes=new[]{ScenePath,CoverSetup.ScenePath},locationPathName="Builds/Windows/EscapeFromIrkutsk.exe",target=BuildTarget.StandaloneWindows64,options=BuildOptions.Development });
             if(report.summary.result!=BuildResult.Succeeded) throw new System.Exception("Build failed: "+report.summary.result);
             Debug.Log("IRKUTSK_BUILD_OK");
         }

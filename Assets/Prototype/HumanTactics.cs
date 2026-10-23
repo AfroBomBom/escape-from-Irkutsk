@@ -17,7 +17,7 @@ namespace IrkutskPrototype
             float closest=8;
             void Notice(Transform target)
             {
-                if(!target.gameObject.activeInHierarchy || !Sight.CanSee(transform,target.position,8,Sight.HumanAngle)) return;
+                if(!target.gameObject.activeInHierarchy || !Sight.CanSee(transform,target,8,Sight.HumanAngle)) return;
                 float d=Vector3.Distance(transform.position,target.position);
                 if(d<closest) { closest=d; Frighten(target.position); }
             }
@@ -48,6 +48,7 @@ namespace IrkutskPrototype
         }
         void RetreatFighting()
         {
+            if(TryUseRegisteredCover()) return;
             State="Отступаю к укрытию";
             if(Time.time>=tacticsAt) { retreatGoal=NpcTactics.RetreatPoint(transform.position,lastSeen); tacticsAt=Time.time+.9f; }
             MoveCombat(retreatGoal);
@@ -70,7 +71,7 @@ namespace IrkutskPrototype
             Transform seen=null; float best=float.MaxValue;
             void Consider(Transform candidate)
             {
-                if(!Game.Alive(candidate) || !Sight.CanSee(transform,candidate.position,12,Sight.HumanAngle)) return;
+                if(!Game.Alive(candidate) || !Sight.CanSee(transform,candidate,12,Sight.HumanAngle)) return;
                 float score=Vector3.Distance(transform.position,candidate.position)-(candidate==CurrentTarget?3:0);
                 if(score<best) { best=score; seen=candidate; }
             }
@@ -84,6 +85,7 @@ namespace IrkutskPrototype
         void MarauderFight()
         {
             State="Атака"; FaceTarget();
+            if(TryUseRegisteredCover()) return;
             if(RepositionIfBlocked()) return;
             if(Time.time>=shotAt) { Game.ObserveAggression(transform); Game.NpcShot(this,CurrentTarget); shotAt=Time.time+1.2f; }
             if(Vector3.Distance(transform.position,CurrentTarget.position)<3)

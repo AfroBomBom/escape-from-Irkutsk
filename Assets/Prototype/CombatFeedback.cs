@@ -17,8 +17,8 @@ namespace IrkutskPrototype
         public void NpcShot(HumanAgent soldier,Transform target)
         {
             WarnCivilians(soldier.transform.position);
-            Vector3 origin=soldier.transform.position+Vector3.up*1.15f;
-            Vector3 aim=target.position+Vector3.up*(target==Car?.8f:1)-origin;
+            Vector3 origin=ActorPosture.Muzzle(soldier.transform);
+            Vector3 aim=Sight.AimPoint(soldier.transform,target)-origin;
             Vector3 direction=Quaternion.Euler(Random.Range(-2f,2f),Random.Range(-5f,5f),0)*aim.normalized;
             LastSoldierDirection=direction; SoldierTracers++;
             var hits=Physics.RaycastAll(origin,direction,24,~0,QueryTriggerInteraction.Collide);

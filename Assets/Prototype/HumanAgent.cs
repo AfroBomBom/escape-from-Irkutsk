@@ -38,6 +38,7 @@ namespace IrkutskPrototype
             if(IsPatrol) { if(playerCaused) Game.PatrolAttacked(this); else if(attacker) Game.ConfirmThreat(this,attacker); }
             if(Health<=0)
             {
+                ReleaseCover();
                 Downed=true; controller.enabled=false; transform.rotation=Quaternion.Euler(90,transform.eulerAngles.y,0); transform.position+=Vector3.up*.2f;
                 if(playerCaused) Game.HumanKilled(this); if(Caption) Caption.gameObject.SetActive(false);
             }
@@ -73,7 +74,9 @@ namespace IrkutskPrototype
         }
         void Update()
         {
+            coverUsedThisTick=false;
             Behavior.Tick();
+            if(!coverUsedThisTick) ReleaseCover();
         }
         BehaviorNode BuildBehavior()
         {
@@ -89,6 +92,7 @@ namespace IrkutskPrototype
                 When("Мародёр",()=>Role==HumanRole.Marauder,
                     Steps("Тактика мародёра",Do("Обзор и память",ObserveMarauder),
                         Select("Решение мародёра",
+                            When("Использую укрытие",CanContinueCover,Run("Укрыться и выглянуть",ContinueCover)),
                             When("Есть источник шума",()=>!CurrentTarget && HasSoundClue,Run("Осторожно проверить",InvestigateSound)),
                             When("Слабый звук",()=>!CurrentTarget && ListeningToWeakSound(),Run("Прислушаться",ListenToSound)),
                             When("Нет цели",()=>!CurrentTarget,Run("Обход",Roam)),
@@ -99,6 +103,7 @@ namespace IrkutskPrototype
                     Do("Обзор, память и лечение",ObserveAndSupport),
                     Select("Выбрать задачу",
                         When("Напарник ранен",NeedsSupport,Run("Подойти для лечения",AssistPartner)),
+                        When("Использую укрытие",CanContinueCover,Run("Укрыться и выглянуть",ContinueCover)),
                         When("Есть источник шума",()=>!CurrentTarget && HasSoundClue,Run("Осторожно проверить",InvestigateSound)),
                         When("Слабый звук",()=>!CurrentTarget && ListeningToWeakSound(),Run("Прислушаться",ListenToSound)),
                         When("Целей нет",()=>!CurrentTarget,Run("Обходить маршрут",Roam)),
@@ -138,6 +143,7 @@ namespace IrkutskPrototype
         void Fight()
         {
             State="Угроза";
+            if(TryUseRegisteredCover()) return;
             if(Health<(Role==HumanRole.Medic?50:35)) { RetreatFighting(); return; }
             if(RepositionIfBlocked()) return;
             bool hero=Game.IsHero(CurrentTarget);

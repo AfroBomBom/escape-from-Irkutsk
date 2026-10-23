@@ -53,9 +53,10 @@ namespace IrkutskPrototype
             var cc=root.AddComponent<CharacterController>(); cc.height=1.8f; cc.radius=.32f; cc.center=Vector3.up*.9f;
             Box("Body",new Vector3(0,1,0),new Vector3(.65f,1,.45f),clothing,false,root.transform);
             Box("Head",new Vector3(0,1.7f,0),new Vector3(.4f,.4f,.4f),snow,false,root.transform);
-            if(role==HumanRole.Medic) { Box("Red cross",new Vector3(0,1.3f,.25f),new Vector3(.35f,.12f,.06f),red,false,root.transform); Box("Scanner",new Vector3(.4f,1,.5f),new Vector3(.3f,.3f,.3f),blue,false,root.transform); }
-            if(role==HumanRole.Soldier || role==HumanRole.Marauder) Box("Rifle",new Vector3(.4f,1,.5f),new Vector3(.2f,.25f,.9f),dark,false,root.transform);
+            if(role==HumanRole.Medic) { Box("Red cross",new Vector3(0,1.3f,.25f),new Vector3(.35f,.12f,.06f),red,false,root.transform); Box("Scanner",new Vector3(.4f,1.3f,.5f),new Vector3(.3f,.3f,.3f),blue,false,root.transform); }
+            if(role==HumanRole.Soldier || role==HumanRole.Marauder) Box("Rifle",new Vector3(.4f,1.3f,.5f),new Vector3(.2f,.25f,.9f),dark,false,root.transform);
             var person=root.AddComponent<HumanAgent>(); person.Role=role; person.Game=this;
+            root.AddComponent<ActorPosture>();
             person.Caption=Label(name,position+Vector3.up*2.6f,Color.white,.18f).GetComponent<TextMesh>();
             person.Caption.transform.SetParent(root.transform,true);
             Humans.Add(person); return person;
@@ -138,7 +139,7 @@ namespace IrkutskPrototype
         {
             WarnCivilians(origin);
             foreach(var person in Humans)
-                if(!person.Downed && person.IsPatrol && Sight.CanSee(person.transform,origin,12,Sight.HumanAngle)) { PatrolAttacked(person); break; }
+                if(!person.Downed && person.IsPatrol && Sight.CanSee(person.transform,Hero,12,Sight.HumanAngle)) { PatrolAttacked(person); break; }
         }
         public void PatrolAttacked(HumanAgent witness=null)
         {
@@ -162,13 +163,13 @@ namespace IrkutskPrototype
                 if(breakProgress>=3) UnlockStore();
             }
             else breakProgress=0;
-            if(!driving && !Scanned && !Medic.Downed && (Medic.CurrentTarget==null || IsHero(Medic.CurrentTarget)) && Sight.CanSee(Medic.transform,Hero.position,Sight.ScannerRange,Sight.HumanAngle))
+            if(!driving && !Scanned && !Medic.Downed && (Medic.CurrentTarget==null || IsHero(Medic.CurrentTarget)) && Sight.CanSee(Medic.transform,Hero,Sight.ScannerRange,Sight.HumanAngle))
             {
                 scanProgress+=Time.deltaTime;
                 if(scanProgress>=2) { Scanned=true; Change(0,0,Sick?"Сканирование: заражён, патруль открывает огонь":"Сканирование: здоров, попытка задержания"); if(Sick) PatrolAttacked(Medic); }
             }
             else if(!Scanned) scanProgress=0;
-            bool close=!driving && Scanned && !PatrolHostile && ((!Medic.Downed && Sight.CanSee(Medic.transform,Hero.position,1.5f,Sight.HumanAngle)) || (!Soldier.Downed && Sight.CanSee(Soldier.transform,Hero.position,1.5f,Sight.HumanAngle)));
+            bool close=!driving && Scanned && !PatrolHostile && ((!Medic.Downed && Sight.CanSee(Medic.transform,Hero,1.5f,Sight.HumanAngle)) || (!Soldier.Downed && Sight.CanSee(Soldier.transform,Hero,1.5f,Sight.HumanAngle)));
             detainProgress=close?detainProgress+Time.deltaTime:0;
             if(detainProgress>=3) { detained=true; finalTime=Time.time-started; bag.Clear(); CloseInteraction(); Change(0,0,"Задержание: добыча конфискована"); }
         }

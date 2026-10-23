@@ -15,7 +15,7 @@ namespace IrkutskPrototype
         Texture2D map;
         EscapeGame game;
         float nextRefresh;
-        sealed class Group { public Transform Root; public Renderer[] Renderers; public bool Self; }
+        sealed class Group { public Transform Root; public Renderer[] Renderers; public bool Bypass,Actor; }
 
         public void Initialize(EscapeGame owner)
         {
@@ -44,7 +44,7 @@ namespace IrkutskPrototype
             var renderers=root.GetComponentsInChildren<Renderer>(true);
             var block=new MaterialPropertyBlock(); block.SetFloat("_FogDynamic",1);
             foreach(var r in renderers) if(!(r is MeshRenderer && r.GetComponent<TextMesh>())) r.SetPropertyBlock(block);
-            groups.Add(new Group { Root=root.transform,Renderers=renderers });
+            groups.Add(new Group { Root=root.transform,Renderers=renderers,Actor=root.GetComponent<CharacterController>()!=null });
         }
         int Index(Vector3 point)
         {
@@ -58,11 +58,19 @@ namespace IrkutskPrototype
             float personal=game.IsDriving?2.2f:1.5f;
             if(Vector2.Distance(new Vector2(point.x,point.z),new Vector2(game.Target.x,game.Target.z))>personal && !Sight.InCone(game.Target,game.IsDriving?game.Car.forward:game.Hero.forward,point,game.IsDriving?14:Sight.HeroRange,Sight.HeroAngle)) return false;
             // Grid cells can straddle a wall. Check the exact point for labels/actors as well.
-            Vector3 eye=game.Target+Vector3.up*1.25f;
+            Vector3 eye=ActorPosture.Eye(game.IsDriving?game.Car:game.Hero);
             Vector3 target=new Vector3(point.x,eye.y,point.z);
             return !Physics.Linecast(eye,target,EscapeGame.SolidMask);
         }
         public bool IsExplored(Vector3 point) { int i=Index(point); return i>=0 && pixels[i].r>0; }
+        public bool IsVisible(Transform actor)
+        {
+            if(game==null || !actor || Index(actor.position)<0) return false;
+            Transform viewer=game.IsDriving?game.Car:game.Hero;
+            float personal=game.IsDriving?2.2f:1.5f;
+            bool nearby=Vector2.Distance(new Vector2(actor.position.x,actor.position.z),new Vector2(game.Target.x,game.Target.z))<=personal;
+            return (nearby || Sight.InCone(viewer.position,viewer.forward,actor.position,game.IsDriving?14:Sight.HeroRange,Sight.HeroAngle)) && Sight.VisibleBody(ActorPosture.Eye(viewer),actor);
+        }
         void LateUpdate()
         {
             if(game==null) return;
@@ -73,7 +81,7 @@ namespace IrkutskPrototype
         {
             if(game==null || map==null) return;
             for(int i=0;i<pixels.Length;i++) pixels[i].g=0;
-            Vector3 eye=game.Target+Vector3.up*1.25f;
+            Vector3 eye=ActorPosture.Eye(game.IsDriving?game.Car:game.Hero);
             float radius=game.IsDriving?14:Sight.HeroRange;
             int minX=Mathf.Max(0,Mathf.FloorToInt(eye.x-radius-Origin.x));
             int maxX=Mathf.Min(Width-1,Mathf.CeilToInt(eye.x+radius-Origin.x));
@@ -99,12 +107,13 @@ namespace IrkutskPrototype
                 var group=groups[i];
                 if(!group.Root) { groups.RemoveAt(i); continue; }
                 bool self=group.Root==game.Hero || (group.Root==game.Car && game.IsDriving);
-                if(self!=group.Self)
+                bool visible=self || (group.Actor?IsVisible(group.Root):IsVisible(group.Root.position)) || (group.Renderers.Length>0 && group.Renderers[0] is LineRenderer);
+                bool bypass=self || (group.Actor && visible);
+                if(bypass!=group.Bypass)
                 {
-                    group.Self=self; var block=new MaterialPropertyBlock(); block.SetFloat("_FogDynamic",1); block.SetFloat("_FogSelf",self?1:0);
+                    group.Bypass=bypass; var block=new MaterialPropertyBlock(); block.SetFloat("_FogDynamic",1); block.SetFloat("_FogSelf",bypass?1:0);
                     foreach(var r in group.Renderers) if(r && !r.GetComponent<TextMesh>()) r.SetPropertyBlock(block);
                 }
-                bool visible=self || IsVisible(group.Root.position) || (group.Renderers.Length>0 && group.Renderers[0] is LineRenderer);
                 foreach(var r in group.Renderers) if(r) r.enabled=visible;
             }
             foreach(var text in labels) if(text)

@@ -38,7 +38,7 @@ namespace IrkutskPrototype
             var game=EscapeGame.Instance; Transform seen=null; float best=float.MaxValue;
             void Consider(Transform target)
             {
-                if(!TargetAlive(target) || !Sight.CanSee(transform,target.position,Sight.InfectedRange,Sight.InfectedAngle)) return;
+                if(!TargetAlive(target) || !Sight.CanSee(transform,target,Sight.InfectedRange,Sight.InfectedAngle)) return;
                 float score=Vector3.Distance(transform.position,target.position)-(target==CurrentTarget?1.2f:0);
                 if(score<best) { best=score; seen=target; }
             }
