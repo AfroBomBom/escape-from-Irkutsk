@@ -136,6 +136,7 @@ namespace IrkutskPrototype
         }
         public void ReportGunfire(Vector3 origin)
         {
+            WarnCivilians(origin);
             foreach(var person in Humans)
                 if(!person.Downed && person.IsPatrol && Sight.CanSee(person.transform,origin,12,Sight.HumanAngle)) { PatrolAttacked(person); break; }
         }

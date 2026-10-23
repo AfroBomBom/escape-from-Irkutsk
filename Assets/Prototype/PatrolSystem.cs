@@ -21,14 +21,22 @@ namespace IrkutskPrototype
         public void ObserveAggression(Transform source)
         {
             foreach(var human in Humans)
-                if(human.IsPatrol && !human.Downed && Sight.CanSee(human.transform,source.position,12,Sight.HumanAngle)) { RegisterThreat(source); break; }
+                if(human.IsPatrol && human.gameObject.activeInHierarchy && !human.Downed && Sight.CanSee(human.transform,source.position,12,Sight.HumanAngle)) { ConfirmThreat(human,source); break; }
         }
+        public void ConfirmThreat(HumanAgent witness,Transform target)
+        {
+            RegisterThreat(target);
+            foreach(var person in Humans)
+                if(person.IsPatrol && person.gameObject.activeInHierarchy && Vector3.Distance(person.transform.position,witness.transform.position)<=12) person.AlertTo(target);
+        }
+        public void WarnCivilians(Vector3 origin)
+        { foreach(var human in Humans) human.HearGunfire(origin); }
         public void CompleteNpcScan(Transform target)
         {
             if(!Alive(target) || IsHero(target) || Medic.Downed || !Sight.CanSee(Medic.transform,target.position,Sight.ScannerRange,Sight.HumanAngle)) return;
             checkedNpcs.Add(target);
             bool witnessed=Fog!=null && (Fog.IsVisible(Medic.transform.position) || Fog.IsVisible(target.position));
-            if(target.GetComponent<Infected>()) { RegisterThreat(target); if(witnessed) Change(0,0,"Патруль: сканер подтвердил заражение"); }
+            if(target.GetComponent<Infected>()) { ConfirmThreat(Medic,target); if(witnessed) Change(0,0,"Патруль: сканер подтвердил заражение"); }
             else if(witnessed) Change(0,0,"Патруль: проверен здоровый человек");
         }
         public Transform SelectPatrolTarget(HumanAgent observer)

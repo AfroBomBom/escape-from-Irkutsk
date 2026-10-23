@@ -46,6 +46,8 @@ namespace IrkutskPrototype
                 void Place(Transform actor,Vector3 point)
                 { var cc=actor.GetComponent<CharacterController>(); cc.enabled=false; actor.position=point; cc.enabled=true; actor.rotation=Quaternion.identity; }
                 Place(game.Medic.transform,Vector3.zero); Place(game.Soldier.transform,new Vector3(0,0,-2));
+                // Stationary scan subject: ordinary civilians can now flee or return home.
+                game.Citizen.enabled=false;
                 game.Citizen.gameObject.SetActive(true); Place(game.Citizen.transform,new Vector3(0,0,2));
                 Set(game.Medic,"<CurrentTarget>k__BackingField",null); Set(game.Medic,"scanTime",0f);
                 Physics.SyncTransforms();
@@ -55,7 +57,9 @@ namespace IrkutskPrototype
                 var target=game.Zombies[0]; target.gameObject.SetActive(true); Place(target.transform,new Vector3(0,0,2));
                 Set(game.Medic,"<CurrentTarget>k__BackingField",null); Set(game.Medic,"scanTime",0f);
                 int shots=game.SoldierTracers;
-                yield return new WaitForSeconds(2.7f);
+                // Allow the soldier to establish a clear lane around the medic.
+                float combatDeadline=Time.time+5;
+                while(Time.time<combatDeadline && !(game.Threat(target.transform) && game.SoldierTracers>shots)) yield return null;
                 Check(game.Threat(target.transform) && game.SoldierTracers>shots,"live infected scan transitions into patrol combat");
                 Debug.Log("IRKUTSK_PATROL_LIVE_OK"); Application.Quit(0); yield break;
             }
