@@ -259,6 +259,7 @@ namespace IrkutskPrototype
             { float d=Vector3.Distance(Hero.position,p.transform.position); if(d<distance) { nearest=p; distance=d; } }
             if(nearest==null) return;
             if(bag.Count>=2) { Say("Рюкзак полон — отнеси детали в гараж"); return; }
+            if(!nearest.GetComponent<WorldLoot>().TakeForHero()) return;
             bag.Add(nearest.Kind); nearest.gameObject.SetActive(false);
             Say("Взято: "+partNames[nearest.Kind]);
         }
@@ -379,5 +380,9 @@ namespace IrkutskPrototype
         }
     }
 
-    public sealed class SparePart : MonoBehaviour { public int Kind; }
+    public sealed class SparePart : MonoBehaviour
+    {
+        public int Kind;
+        void Awake() { if(!GetComponent<WorldLoot>()) gameObject.AddComponent<WorldLoot>(); }
+    }
 }

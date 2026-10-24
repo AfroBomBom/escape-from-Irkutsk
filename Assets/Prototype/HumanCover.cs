@@ -27,7 +27,7 @@ namespace IrkutskPrototype
                 && !(rescueUsedThisTick && rescuePatient)) posture.TrySetCrouched(false);
         }
         void OnDisable()
-        { CancelRescue(); ReleaseIncomingRescue(); ReleaseCover(); TacticalTask=PatrolTask.None; taskUntil=0; taskFrame=-1; }
+        { CancelLoot(); CancelRescue(); ReleaseIncomingRescue(); ReleaseCover(); TacticalTask=PatrolTask.None; taskUntil=0; taskFrame=-1; }
         bool TryUseRegisteredCover()
         {
             if(!CurrentTarget) return false;

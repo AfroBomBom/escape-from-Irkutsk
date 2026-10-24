@@ -62,6 +62,7 @@ namespace IrkutskPrototype
             if(Downed) return;
             CancelRescue(); ReleaseIncomingRescue(); ReleaseCover();
             Downed=true; IsIncapacitated=false; Health=0; TacticalTask=PatrolTask.None; CurrentTarget=null;
+            DropLoot();
             if(casualtyBody) casualtyBody.enabled=false;
             GetComponent<ActorPosture>().SetIncapacitated(false);
             controller.enabled=false; transform.rotation=Quaternion.Euler(90,transform.eulerAngles.y,0); transform.position+=Vector3.up*.2f;

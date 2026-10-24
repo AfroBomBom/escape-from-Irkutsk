@@ -61,12 +61,14 @@ namespace IrkutskPrototype
             person.Caption.transform.SetParent(root.transform,true);
             Humans.Add(person); return person;
         }
-        void SpawnExtra(string name,int kind,Vector3 pos,Material m,bool owned)
+        public ExpeditionPickup SpawnExtra(string name,int kind,Vector3 pos,Material m,bool owned)
         {
             var root=Box(name,pos,new Vector3(.8f,.6f,.8f),m,false);
             var item=root.AddComponent<ExpeditionPickup>(); item.Kind=kind; item.Owned=owned;
             Label(name,pos+Vector3.up*1.2f,owned?new Color(1,.5f,.2f):Color.white,.18f).transform.SetParent(root.transform,true);
             ExtraItems.Add(item);
+            if(Fog) Fog.RegisterDynamic(root);
+            return item;
         }
         bool Near(Vector3 pos,float range=2.6f) => Vector3.Distance(Hero.position,pos)<range && !Physics.Linecast(Hero.position+Vector3.up,pos+Vector3.up,SolidMask);
         bool TryExpeditionInteraction()
@@ -78,6 +80,7 @@ namespace IrkutskPrototype
                 {
                     if(item.Owned) { LootStore(); return true; }
                     if(bag.Count>=2) { Say("Рюкзак полон"); return true; }
+                    if(!item.GetComponent<WorldLoot>().TakeForHero()) return true;
                     bag.Add(item.Kind); item.gameObject.SetActive(false); Say("Взято: "+ItemName(item.Kind)); return true;
                 }
             return false;
@@ -109,6 +112,7 @@ namespace IrkutskPrototype
             if(!shopUnlocked || shopLooted || bag.Count>=2) { Say("Нет места или магазин ещё закрыт"); return false; }
             var stock=ExtraItems.Find(p=>p.Owned && p.gameObject.activeSelf);
             if(stock==null || !Near(stock.transform.position,2.1f)) return false;
+            if(!stock.GetComponent<WorldLoot>().TakeForHero()) return false;
             stock.gameObject.SetActive(false); bag.Add(4); shopLooted=true;
             Change(0,-10,"Кража из вскрытого магазина"); Say("Украдено лекарство: −10 репутации, деньги не списываются"); return true;
         }
@@ -214,5 +218,9 @@ namespace IrkutskPrototype
             if(GUI.Button(new Rect(x+140,y+228,220,40),"Закрыть (Esc)")) CloseInteraction();
         }
     }
-    public sealed class ExpeditionPickup : MonoBehaviour { public int Kind; public bool Owned; }
+    public sealed class ExpeditionPickup : MonoBehaviour
+    {
+        public int Kind; public bool Owned;
+        void Awake() { if(!GetComponent<WorldLoot>()) gameObject.AddComponent<WorldLoot>(); }
+    }
 }

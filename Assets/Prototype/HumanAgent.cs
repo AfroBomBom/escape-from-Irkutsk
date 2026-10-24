@@ -36,7 +36,7 @@ namespace IrkutskPrototype
             Health-=damage*(Role==HumanRole.Soldier?.5f:Role==HumanRole.Medic?.8f:1);
             Transform source=playerCaused?Game.Hero:attacker;
             if(Role==HumanRole.Civilian && source) Frighten(source.position);
-            if(Role==HumanRole.Marauder && source) AlertTo(source);
+            if(Role==HumanRole.Marauder) { CancelLoot(); if(source) AlertTo(source); }
             if(IsPatrol) { if(playerCaused) Game.PatrolAttacked(this); else if(attacker) Game.ConfirmThreat(this,attacker); }
             if(Health<=0)
             {
@@ -44,7 +44,7 @@ namespace IrkutskPrototype
                 else Die(playerCaused);
             }
         }
-        public void Detain() { if(Downed || IsIncapacitated) return; CancelRescue(); IsDetained=true; State="В карантин"; CurrentTarget=null; }
+        public void Detain() { if(Downed || IsIncapacitated) return; CancelRescue(); IsDetained=true; DropLoot(); State="В карантин"; CurrentTarget=null; }
         public void Stun(float seconds) { stunnedUntil=Time.time+seconds; }
         public bool Ignores(Transform target)=>target==ignored && Time.time<ignoreUntil;
         public void AlertTo(Transform target)
@@ -77,6 +77,7 @@ namespace IrkutskPrototype
         void Update()
         {
             TickIncapacitation();
+            lootUsedThisTick=false;
             coverUsedThisTick=false;
             taskFrame=-1;
             Behavior.Tick();
@@ -84,6 +85,7 @@ namespace IrkutskPrototype
             if(taskFrame!=Time.frameCount) { TacticalTask=PatrolTask.None; taskUntil=0; }
             if(!rescueUsedThisTick) CancelRescue();
             rescueUsedThisTick=false;
+            if(!lootUsedThisTick) CancelLoot();
         }
         BehaviorNode BuildBehavior()
         {
@@ -102,7 +104,7 @@ namespace IrkutskPrototype
                             When("Использую укрытие",CanContinueCover,Run("Укрыться и выглянуть",ContinueCover)),
                             When("Есть источник шума",()=>!CurrentTarget && HasSoundClue,Run("Осторожно проверить",InvestigateSound)),
                             When("Слабый звук",()=>!CurrentTarget && ListeningToWeakSound(),Run("Прислушаться",ListenToSound)),
-                            When("Нет цели",()=>!CurrentTarget,Run("Обход",Roam)),
+                            When("Нет цели",()=>!CurrentTarget,Run("Искать и собирать добычу",ScavengeLoot)),
                             When("Потерял цель",()=>!targetVisible,Run("Искать",Search)),
                             When("Сильно ранен",()=>Health<40,Run("Отступать с огнём",RetreatFighting)),
                             Run("Выбрать позицию и атаковать",MarauderFight)))),

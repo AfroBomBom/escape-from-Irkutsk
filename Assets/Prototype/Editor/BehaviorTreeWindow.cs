@@ -39,6 +39,12 @@ namespace IrkutskPrototype
                 EditorGUILayout.LabelField("Укрытие",coverUser.SelectedCover?coverUser.SelectedCover.name:"Нет");
             if(actor is HumanAgent listener)
                 EditorGUILayout.LabelField("Источник шума",listener.HasSoundClue?listener.LastHeardPosition.ToString("F1"):"Нет активной зацепки");
+            if(actor is HumanAgent looter && looter.Role==HumanRole.Marauder)
+            {
+                EditorGUILayout.LabelField("Добыча",looter.LootInventory.Count+" / 3");
+                foreach(var item in looter.LootInventory) if(item) EditorGUILayout.LabelField("  • "+item.name);
+                EditorGUILayout.LabelField("Сбор",looter.LootTarget?looter.LootTarget.name+" "+(looter.LootProgress*100).ToString("F0")+"%":"Осмотр местности");
+            }
             if(actor is HumanAgent patrol && patrol.IsPatrol)
             {
                 EditorGUILayout.LabelField("Тактическая задача",patrol.TacticalTask.ToString());
