@@ -23,10 +23,11 @@ namespace IrkutskPrototype
             if(SelectedCover) SelectedCover.Release(this);
             SelectedCover=null; peeking=false; nextPeekAt=0;
             var posture=GetComponent<ActorPosture>();
-            if(posture && posture.IsCrouched && controller && controller.enabled && gameObject.activeInHierarchy && !Downed) posture.TrySetCrouched(false);
+            if(posture && posture.IsCrouched && controller && controller.enabled && gameObject.activeInHierarchy && !Downed
+                && !(rescueUsedThisTick && rescuePatient)) posture.TrySetCrouched(false);
         }
         void OnDisable()
-        { ReleaseCover(); TacticalTask=PatrolTask.None; taskUntil=0; taskFrame=-1; }
+        { CancelRescue(); ReleaseIncomingRescue(); ReleaseCover(); TacticalTask=PatrolTask.None; taskUntil=0; taskFrame=-1; }
         bool TryUseRegisteredCover()
         {
             if(!CurrentTarget) return false;

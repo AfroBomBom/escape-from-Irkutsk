@@ -12,7 +12,7 @@ namespace IrkutskPrototype
 
         public void HearNoise(Vector3 origin,float radius,Transform source=null,NoiseKind kind=NoiseKind.Unknown)
         {
-            if(!enabled || !gameObject.activeInHierarchy || Downed || IsDetained || Role==HumanRole.Civilian || source==transform || radius<=0) return;
+            if(!enabled || !gameObject.activeInHierarchy || Downed || IsIncapacitated || IsDetained || Role==HumanRole.Civilian || source==transform || radius<=0) return;
             var person=source?source.GetComponent<HumanAgent>():null;
             if(IsPatrol && person && person.IsPatrol) return;
             if(CurrentTarget && targetVisible) return;
@@ -76,7 +76,7 @@ namespace IrkutskPrototype
         }
         public void ReceiveReport(Transform target,Vector3 reportedPosition)
         {
-            if(Downed || IsDetained || !gameObject.activeInHierarchy || !Game.Alive(target)) return;
+            if(Downed || IsIncapacitated || IsDetained || !gameObject.activeInHierarchy || !Game.Alive(target)) return;
             // A neutral report must not interrupt a check already in progress.
             if(CurrentTarget && Game.Threat(CurrentTarget) && !Game.Threat(target)) return;
             if(CurrentTarget && targetVisible && (CurrentTarget==target || Game.Threat(CurrentTarget) || !Game.Threat(target))) return;

@@ -1,7 +1,7 @@
 using UnityEngine;
 namespace IrkutskPrototype
 {
-    public enum PatrolTask { None, Hold, Advance, Retreat, Reposition, Cover, Support }
+    public enum PatrolTask { None, Hold, Advance, Retreat, Reposition, Cover, Support, Rescue, GuardRescue }
     public sealed partial class HumanAgent
     {
         public PatrolTask TacticalTask { get; private set; }
@@ -16,11 +16,12 @@ namespace IrkutskPrototype
             get
             {
                 var other=Role==HumanRole.Soldier?Game.Medic:Game.Soldier;
-                return other && other.enabled && other.gameObject.activeInHierarchy && !other.Downed && !other.IsDetained
+                return other && other.enabled && other.gameObject.activeInHierarchy && !other.Downed && !other.IsIncapacitated && !other.IsDetained
                     && Time.time>=other.stunnedUntil && Vector3.Distance(transform.position,other.transform.position)<=12?other:null;
             }
         }
         bool ChangingPosition => TacticalTask==PatrolTask.Advance || TacticalTask==PatrolTask.Retreat || TacticalTask==PatrolTask.Reposition
+            || (TacticalTask==PatrolTask.Rescue && rescuePatient && Vector3.Distance(transform.position,rescuePatient.transform.position)>1.6f)
             || (TacticalTask==PatrolTask.Support && Vector3.Distance(transform.position,taskGoal)>2.5f)
             || (TacticalTask==PatrolTask.Cover && (peeking || (SelectedCover && Vector3.Distance(transform.position,SelectedCover.transform.position)>.5f)));
         bool PartnerMoving()
@@ -65,7 +66,7 @@ namespace IrkutskPrototype
             if(Role!=HumanRole.Medic || Time.time<healAt) return;
             bool self=Health<100 && SafeToTreat(this);
             var soldier=Game.Soldier;
-            bool other=soldier && soldier.gameObject.activeInHierarchy && !soldier.Downed && !soldier.IsDetained && soldier.Health<100
+            bool other=soldier && soldier.gameObject.activeInHierarchy && !soldier.Downed && !soldier.IsIncapacitated && !soldier.IsDetained && soldier.Health<100
                 && Vector3.Distance(transform.position,soldier.transform.position)<3 && SafeToTreat(soldier)
                 && Sight.Clear(ActorPosture.Chest(transform),ActorPosture.Chest(soldier.transform));
             if(!self && !other) return;

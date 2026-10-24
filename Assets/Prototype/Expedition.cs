@@ -47,7 +47,7 @@ namespace IrkutskPrototype
             SpawnExtra("Бронепластина",5,new Vector3(-1,.4f,-16),steel,false);
             Change(0,0,"Начало теста: 60 ₽. Счётчики действуют в пределах забега.");
         }
-        HumanAgent SpawnHuman(string name,HumanRole role,Vector3 position,Material clothing)
+        public HumanAgent SpawnHuman(string name,HumanRole role,Vector3 position,Material clothing)
         {
             var root=new GameObject(name); root.transform.position=position;
             var cc=root.AddComponent<CharacterController>(); cc.height=1.8f; cc.radius=.32f; cc.center=Vector3.up*.9f;
@@ -139,7 +139,7 @@ namespace IrkutskPrototype
         {
             WarnCivilians(origin);
             foreach(var person in Humans)
-                if(!person.Downed && person.IsPatrol && Sight.CanSee(person.transform,Hero,12,Sight.HumanAngle)) { PatrolAttacked(person); break; }
+                if(!person.Downed && !person.IsIncapacitated && person.IsPatrol && Sight.CanSee(person.transform,Hero,12,Sight.HumanAngle)) { PatrolAttacked(person); break; }
         }
         public void PatrolAttacked(HumanAgent witness=null)
         {
@@ -163,13 +163,13 @@ namespace IrkutskPrototype
                 if(breakProgress>=3) UnlockStore();
             }
             else breakProgress=0;
-            if(!driving && !Scanned && !Medic.Downed && (Medic.CurrentTarget==null || IsHero(Medic.CurrentTarget)) && Sight.CanSee(Medic.transform,Hero,Sight.ScannerRange,Sight.HumanAngle))
+            if(!driving && !Scanned && !Medic.Downed && !Medic.IsIncapacitated && !Medic.RescuePatient && (Medic.CurrentTarget==null || IsHero(Medic.CurrentTarget)) && Sight.CanSee(Medic.transform,Hero,Sight.ScannerRange,Sight.HumanAngle))
             {
                 scanProgress+=Time.deltaTime;
                 if(scanProgress>=2) { Scanned=true; Change(0,0,Sick?"Сканирование: заражён, патруль открывает огонь":"Сканирование: здоров, попытка задержания"); if(Sick) PatrolAttacked(Medic); }
             }
             else if(!Scanned) scanProgress=0;
-            bool close=!driving && Scanned && !PatrolHostile && ((!Medic.Downed && Sight.CanSee(Medic.transform,Hero,1.5f,Sight.HumanAngle)) || (!Soldier.Downed && Sight.CanSee(Soldier.transform,Hero,1.5f,Sight.HumanAngle)));
+            bool close=!driving && Scanned && !PatrolHostile && ((!Medic.Downed && !Medic.IsIncapacitated && !Medic.RescuePatient && Sight.CanSee(Medic.transform,Hero,1.5f,Sight.HumanAngle)) || (!Soldier.Downed && !Soldier.IsIncapacitated && !Soldier.RescuePatient && Sight.CanSee(Soldier.transform,Hero,1.5f,Sight.HumanAngle)));
             detainProgress=close?detainProgress+Time.deltaTime:0;
             if(detainProgress>=3) { detained=true; finalTime=Time.time-started; bag.Clear(); CloseInteraction(); Change(0,0,"Задержание: добыча конфискована"); }
         }

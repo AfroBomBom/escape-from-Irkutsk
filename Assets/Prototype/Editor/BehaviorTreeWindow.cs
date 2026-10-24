@@ -43,6 +43,8 @@ namespace IrkutskPrototype
             {
                 EditorGUILayout.LabelField("Тактическая задача",patrol.TacticalTask.ToString());
                 EditorGUILayout.LabelField("Удержание решения",patrol.TaskHoldRemaining.ToString("F1")+" с");
+                EditorGUILayout.LabelField("Тяжёлое ранение",patrol.IsIncapacitated?patrol.BleedoutRemaining.ToString("F1")+" с до гибели":"Нет");
+                EditorGUILayout.LabelField("Спасение",patrol.RescuePatient?patrol.RescuePatient.name+" "+(patrol.RescueProgress*100).ToString("F0")+"%":"Нет");
             }
             scroll=EditorGUILayout.BeginScrollView(scroll);
             Draw(tree,0);

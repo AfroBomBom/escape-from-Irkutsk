@@ -27,10 +27,11 @@ namespace IrkutskPrototype
         static readonly Vector3[] PatrolPoints={new Vector3(23,0,8),new Vector3(20,0,12),new Vector3(0,0,10),new Vector3(-16,0,0),new Vector3(-1,0,-10),new Vector3(20,0,-8),new Vector3(27,0,1)};
         void Awake() { controller=GetComponent<CharacterController>(); }
         void Start() { home=transform.position; waypoint=Role==HumanRole.Soldier?1:0; }
-        void LateUpdate() { if(Caption) { Caption.transform.rotation=Quaternion.Euler(65,0,0); if(!Downed) Caption.text=name+": "+State; } }
+        void LateUpdate() { if(Caption) { Caption.transform.rotation=Quaternion.Euler(65,0,0); if(!Downed) Caption.text=name+": "+State+(IsIncapacitated?" "+BleedoutRemaining.ToString("F0")+" с":""); } }
         public void Hit(float damage,bool playerCaused=true,Transform attacker=null)
         {
             if(Downed) return;
+            if(IsIncapacitated) { HitIncapacitated(damage,playerCaused); return; }
             if(damage>0) lastDamageAt=Time.time;
             Health-=damage*(Role==HumanRole.Soldier?.5f:Role==HumanRole.Medic?.8f:1);
             Transform source=playerCaused?Game.Hero:attacker;
@@ -39,12 +40,11 @@ namespace IrkutskPrototype
             if(IsPatrol) { if(playerCaused) Game.PatrolAttacked(this); else if(attacker) Game.ConfirmThreat(this,attacker); }
             if(Health<=0)
             {
-                ReleaseCover();
-                Downed=true; controller.enabled=false; transform.rotation=Quaternion.Euler(90,transform.eulerAngles.y,0); transform.position+=Vector3.up*.2f;
-                if(playerCaused) Game.HumanKilled(this); if(Caption) Caption.gameObject.SetActive(false);
+                if(IsPatrol && Health> -40 && revivals==0 && !IsDetained) Incapacitate(playerCaused);
+                else Die(playerCaused);
             }
         }
-        public void Detain() { IsDetained=true; State="В карантин"; CurrentTarget=null; }
+        public void Detain() { if(Downed || IsIncapacitated) return; CancelRescue(); IsDetained=true; State="В карантин"; CurrentTarget=null; }
         public void Stun(float seconds) { stunnedUntil=Time.time+seconds; }
         public bool Ignores(Transform target)=>target==ignored && Time.time<ignoreUntil;
         public void AlertTo(Transform target)
@@ -53,6 +53,7 @@ namespace IrkutskPrototype
         }
         public void MoveTo(Vector3 goal,float stop=1,float pace=2.1f)
         {
+            if(Downed || IsIncapacitated || !controller.enabled) return;
             Vector3 delta=goal-transform.position; delta.y=0; if(delta.magnitude<stop) return;
             if(Physics.SphereCast(transform.position+Vector3.up,.4f,delta.normalized,out _,delta.magnitude,EscapeGame.SolidMask))
             {
@@ -75,18 +76,21 @@ namespace IrkutskPrototype
         }
         void Update()
         {
+            TickIncapacitation();
             coverUsedThisTick=false;
             taskFrame=-1;
             Behavior.Tick();
             if(!coverUsedThisTick) ReleaseCover();
             if(taskFrame!=Time.frameCount) { TacticalTask=PatrolTask.None; taskUntil=0; }
+            if(!rescueUsedThisTick) CancelRescue();
+            rescueUsedThisTick=false;
         }
         BehaviorNode BuildBehavior()
         {
             // Priority runs from top to bottom; action timers and target memory
             // belong to this agent, never to a shared tree instance.
             return Select("Поведение NPC",
-                When("Недоступен / оглушён",()=>Game==null || Game.IsOver || Downed || Time.time<stunnedUntil,
+                When("Недоступен / оглушён",()=>Game==null || Game.IsOver || Downed || IsIncapacitated || Time.time<stunnedUntil,
                     Run("Ожидать",()=>{})),
                 When("Задержан",()=>IsDetained,Run("Идти в карантин",()=>MoveTo(new Vector3(27,0,17)))),
                 When("Мирный житель",()=>Role==HumanRole.Civilian,
@@ -105,6 +109,8 @@ namespace IrkutskPrototype
                 Steps("Патруль",
                     Do("Обзор, память и лечение",ObserveAndSupport),
                     Select("Выбрать задачу",
+                        When("Можно спасти напарника",CanRescue,Run("Подойти и поднять",RescuePartner)),
+                        When("Прикрыть спасение",ShouldGuardRescue,Run("Прикрывать врача",GuardRescue)),
                         When("Напарник ранен",NeedsSupport,Run("Подойти для лечения",AssistPartner)),
                         When("Использую укрытие",CanContinueCover,Run("Тактика из укрытия",Fight)),
                         When("Есть источник шума",()=>!CurrentTarget && HasSoundClue,Run("Осторожно проверить",InvestigateSound)),

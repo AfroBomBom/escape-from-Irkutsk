@@ -8,6 +8,7 @@ namespace IrkutskPrototype
     {
         bool combat,high;
         bool pair;
+        HumanAgent guard;
         EscapeGame game;
         void Awake()
         {
@@ -50,19 +51,36 @@ namespace IrkutskPrototype
                 pair=!pair; game.Medic.gameObject.SetActive(pair);
                 if(pair)
                 {
-                    var cc=game.Medic.GetComponent<CharacterController>(); cc.enabled=false;
-                    game.Medic.transform.position=new Vector3(23,0,-2); cc.enabled=true;
+                    if(!game.Medic.Downed && !game.Medic.IsIncapacitated)
+                    {
+                        var cc=game.Medic.GetComponent<CharacterController>(); cc.enabled=false;
+                        game.Medic.transform.position=new Vector3(23,0,-2); cc.enabled=true;
+                    }
                     game.Medic.enabled=combat;
                     if(combat) game.Medic.AlertTo(game.Hero);
                 }
             }
             if(pair) game.Medic.enabled=combat;
+            if(guard) guard.enabled=combat;
+            if(Keyboard.current.f6Key.wasPressedThisFrame)
+            {
+                if(!guard)
+                {
+                    guard=game.SpawnHuman("Прикрытие",HumanRole.Soldier,new Vector3(26,0,-2),game.Soldier.GetComponentInChildren<Renderer>().sharedMaterial);
+                    guard.enabled=combat; game.Fog.RegisterDynamic(guard.gameObject);
+                }
+                else guard.gameObject.SetActive(!guard.gameObject.activeSelf);
+            }
             if(Keyboard.current.f10Key.wasPressedThisFrame && !game.Soldier.Downed && game.Soldier.Health>40)
                 game.Soldier.Hit((game.Soldier.Health-40)*2,false);
+            if(Keyboard.current.f11Key.wasPressedThisFrame && !game.Soldier.Downed && !game.Soldier.IsIncapacitated)
+                game.Soldier.Hit(game.Soldier.Health*2+2,false);
+            if(Keyboard.current.f12Key.wasPressedThisFrame && pair && !game.Medic.Downed && !game.Medic.IsIncapacitated)
+                game.Medic.Hit(game.Medic.Health/.8f+1,false);
         }
         void OnGUI()
         {
-            GUI.Box(new Rect(Screen.width/2-300,Screen.height-135,600,120),"ПЕСОЧНИЦА УКРЫТИЙ И ТАКТИКИ\nC — присесть / встать; WASD — движение\nF7 — бой; F8 — низкое / высокое; F9 — добавить / убрать врача\nF10 — ранить солдата до 40 HP; F5 — начать заново\nСолдат: "+game.Soldier.TacticalTask+" / "+game.Soldier.Health.ToString("F0")+" HP; врач: "+(pair?game.Medic.TacticalTask.ToString():"выключен"));
+            GUI.Box(new Rect(Screen.width/2-320,Screen.height-175,640,160),"ПЕСОЧНИЦА УКРЫТИЙ И СПАСЕНИЯ\nC — присесть; WASD — движение; F5 — начать заново\nF6 — третий солдат; F7 — бой; F8 — укрытие; F9 — врач\nF10 — ранить солдата; F11 — тяжело ранить солдата; F12 — врача\nОтойди от раненого, чтобы дать напарнику безопасно помочь.\nСолдат: "+game.Soldier.State+" / "+game.Soldier.Health.ToString("F0")+" HP\nВрач: "+(pair?game.Medic.State+" "+(game.Medic.RescueProgress*100).ToString("F0")+"%":"выключен"));
         }
     }
 }

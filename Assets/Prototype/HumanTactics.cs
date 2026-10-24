@@ -34,7 +34,7 @@ namespace IrkutskPrototype
         { if(Vector3.Distance(transform.position,home)>1) { State="Возвращаюсь"; MoveTo(home,.8f); } else State="Мирный"; }
         bool NeedsSupport()
         {
-            return Role==HumanRole.Medic && Game.Soldier && Game.Soldier.gameObject.activeInHierarchy && !Game.Soldier.Downed && !Game.Soldier.IsDetained
+            return Role==HumanRole.Medic && Game.Soldier && Game.Soldier.gameObject.activeInHierarchy && !Game.Soldier.Downed && !Game.Soldier.IsIncapacitated && !Game.Soldier.IsDetained
                 && Game.Soldier.Health<65 && Time.time>=healAt && Vector3.Distance(transform.position,Game.Soldier.transform.position)<=12
                 && SafeToTreat(Game.Soldier) && SafeSupportPath(Game.Soldier.transform.position);
         }

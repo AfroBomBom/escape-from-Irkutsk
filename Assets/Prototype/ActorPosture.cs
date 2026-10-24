@@ -7,6 +7,7 @@ namespace IrkutskPrototype
     {
         public const float StandingHeight=1.8f, CrouchingHeight=1;
         public bool IsCrouched { get; private set; }
+        public bool IsIncapacitated { get; private set; }
         CharacterController body;
         Transform visuals;
         void Awake() { body=GetComponent<CharacterController>(); }
@@ -22,6 +23,7 @@ namespace IrkutskPrototype
         }
         public bool TrySetCrouched(bool crouched)
         {
+            if(IsIncapacitated) return false;
             if(!body) body=GetComponent<CharacterController>();
             if(!crouched && IsCrouched)
             {
@@ -31,11 +33,18 @@ namespace IrkutskPrototype
             }
             IsCrouched=crouched; PrepareVisuals(); Apply(); return true;
         }
+        public void SetIncapacitated(bool incapacitated)
+        { IsIncapacitated=incapacitated; IsCrouched=incapacitated || IsCrouched; PrepareVisuals(); Apply(); }
         void Apply()
         {
-            body.height=IsCrouched?CrouchingHeight:StandingHeight;
+            body.height=IsIncapacitated?.64f:IsCrouched?CrouchingHeight:StandingHeight;
             body.center=Vector3.up*body.height*.5f;
-            if(visuals) visuals.localScale=new Vector3(1,body.height/StandingHeight,1);
+            if(visuals)
+            {
+                visuals.localScale=IsIncapacitated?Vector3.one:new Vector3(1,body.height/StandingHeight,1);
+                visuals.localRotation=IsIncapacitated?Quaternion.Euler(90,0,0):Quaternion.identity;
+                visuals.localPosition=IsIncapacitated?new Vector3(0,.28f,-.8f):Vector3.zero;
+            }
         }
         public static float Height(Transform actor)
         {
