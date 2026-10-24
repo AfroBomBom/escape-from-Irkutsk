@@ -113,6 +113,7 @@ namespace IrkutskPrototype
                     Select("Выбрать задачу",
                         When("Можно спасти напарника",CanRescue,Run("Подойти и поднять",RescuePartner)),
                         When("Прикрыть спасение",ShouldGuardRescue,Run("Прикрывать врача",GuardRescue)),
+                        When("Напарник отходит",MedicMustFollowRetreat,Run("Отойти за солдатом",()=>MedicRearSupport())),
                         When("Напарник ранен",NeedsSupport,Run("Подойти для лечения",AssistPartner)),
                         When("Использую укрытие",CanContinueCover,Run("Тактика из укрытия",Fight)),
                         When("Есть источник шума",()=>!CurrentTarget && HasSoundClue,Run("Осторожно проверить",InvestigateSound)),

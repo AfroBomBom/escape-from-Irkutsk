@@ -32,7 +32,7 @@ namespace IrkutskPrototype
         {
             if(!CurrentTarget) return false;
             Vector3 threat=lastSeen; // Never query the hidden target's current position.
-            if(SelectedCover && (!SelectedCover.ProtectsFrom(threat) || !SelectedCover.TryReserve(this))) ReleaseCover();
+            if(SelectedCover && (!MedicCoverAllowed(SelectedCover) || !SelectedCover.ProtectsFrom(threat) || !SelectedCover.TryReserve(this))) ReleaseCover();
             if(!SelectedCover)
             {
                 if(Time.time<coverSeekAt) return false;
@@ -40,7 +40,7 @@ namespace IrkutskPrototype
                 CoverSlot best=null; float bestDistance=9;
                 foreach(var slot in CoverSlot.Active)
                 {
-                    if(!slot || (slot==rejectedCover && Time.time<rejectedUntil) || (slot.Owner && slot.Owner!=this) || !slot.ProtectsFrom(threat)) continue;
+                    if(!slot || !MedicCoverAllowed(slot) || (slot==rejectedCover && Time.time<rejectedUntil) || (slot.Owner && slot.Owner!=this) || !slot.ProtectsFrom(threat)) continue;
                     float distance=Vector3.Distance(transform.position,slot.transform.position);
                     if(distance>=bestDistance || (distance>.7f && !NpcTactics.ClearStep(transform.position,slot.transform.position) && GridRoute.Find(transform.position,slot.transform.position).Count==0)) continue;
                     best=slot; bestDistance=distance;

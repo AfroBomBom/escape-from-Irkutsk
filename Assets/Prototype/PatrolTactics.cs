@@ -1,7 +1,7 @@
 using UnityEngine;
 namespace IrkutskPrototype
 {
-    public enum PatrolTask { None, Hold, Advance, Retreat, Reposition, Cover, Support, Rescue, GuardRescue }
+    public enum PatrolTask { None, Hold, Advance, Retreat, Reposition, Cover, Support, Rescue, GuardRescue, FollowRear }
     public sealed partial class HumanAgent
     {
         public PatrolTask TacticalTask { get; private set; }
@@ -21,6 +21,7 @@ namespace IrkutskPrototype
             }
         }
         bool ChangingPosition => TacticalTask==PatrolTask.Advance || TacticalTask==PatrolTask.Retreat || TacticalTask==PatrolTask.Reposition
+            || TacticalTask==PatrolTask.FollowRear
             || (TacticalTask==PatrolTask.Rescue && rescuePatient && Vector3.Distance(transform.position,rescuePatient.transform.position)>1.6f)
             || (TacticalTask==PatrolTask.Support && Vector3.Distance(transform.position,taskGoal)>2.5f)
             || (TacticalTask==PatrolTask.Cover && (peeking || (SelectedCover && Vector3.Distance(transform.position,SelectedCover.transform.position)>.5f)));
@@ -67,11 +68,11 @@ namespace IrkutskPrototype
             bool self=Health<100 && SafeToTreat(this);
             var soldier=Game.Soldier;
             bool other=soldier && soldier.gameObject.activeInHierarchy && !soldier.Downed && !soldier.IsIncapacitated && !soldier.IsDetained && soldier.Health<100
-                && Vector3.Distance(transform.position,soldier.transform.position)<3 && SafeToTreat(soldier)
-                && Sight.Clear(ActorPosture.Chest(transform),ActorPosture.Chest(soldier.transform));
+                && Vector3.Distance(transform.position,soldier.transform.position)<=6 && SafeToTreat(soldier)
+                && Sight.Clear(ActorPosture.Chest(transform),ActorPosture.Chest(soldier.transform)) && NpcTactics.FiringLane(transform,soldier.transform);
             if(!self && !other) return;
             if(self) Health=Mathf.Min(100,Health+15);
-            if(other) soldier.Health=Mathf.Min(100,soldier.Health+15);
+            if(other) Game.FireHealingDart(this,soldier);
             healAt=Time.time+8;
         }
         void FireIfSafe()
@@ -102,6 +103,7 @@ namespace IrkutskPrototype
                     SetTask(PatrolTask.Retreat,NpcTactics.RetreatPoint(transform.position,lastSeen));
                 taskFrame=Time.frameCount; State="Отхожу от угрозы"; MoveCombat(taskGoal); FireIfSafe(); return;
             }
+            if(MedicRearSupport()) return;
             if(!wounded && PartnerMoving() && (!SelectedCover || (!peeking && Vector3.Distance(transform.position,SelectedCover.transform.position)>.5f)))
             { HoldAndCover(); return; }
             if(TryUseRegisteredCover()) { SetTask(PatrolTask.Cover,SelectedCover.transform.position); return; }

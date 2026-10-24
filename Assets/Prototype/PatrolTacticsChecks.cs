@@ -104,9 +104,10 @@ namespace IrkutskPrototype
             Set(medic,"lastDamageAt",Time.time); Call(medic,"TrySafeHealing");
             Check(soldier.Health==40,"recent damage interrupts treatment even without a currently visible attacker");
             yield return new WaitForSeconds(1.3f); Call(medic,"TrySafeHealing");
+            yield return new WaitForSeconds(.25f); // Healing now arrives on projectile impact.
             Check(soldier.Health==55,"treatment resumes after the damage safety interval");
 
-            Reset(game); Human(soldier,new Vector3(20,0,0)); Human(medic,new Vector3(24,0,0));
+            Reset(game); Human(soldier,new Vector3(20,0,0)); Human(medic,new Vector3(26.5f,0,0));
             Set(soldier,"<Health>k__BackingField",40f); medic.enabled=true; soldier.enabled=true;
             Place(game.Hero,new Vector3(20,0,11)); Call(medic,"Update"); Call(soldier,"Update");
             Check(medic.TacticalTask==PatrolTask.Support && soldier.TacticalTask==PatrolTask.Hold,"soldier guards while medic approaches in a safe gap");
