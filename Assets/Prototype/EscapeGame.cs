@@ -279,20 +279,23 @@ namespace IrkutskPrototype
             if(ammo==0) { Say("Нет патронов — нажми R"); return; }
             ammo--; shotAt=Time.time+.35f; flashUntil=Time.time+.08f;
             Noise(Hero.position,14,Hero,NoiseKind.Gunshot); sound.PlayOneShot(shotClip,.65f);
-            ReportGunfire(Hero.position);
             Vector3 origin=ActorPosture.Muzzle(Hero);
             var hits=Physics.RaycastAll(origin,Hero.forward,35);
             System.Array.Sort(hits,(a,b)=>a.distance.CompareTo(b.distance));
             Vector3 end=origin+Hero.forward*35;
+            HumanAgent struckHuman=null; Infected struckInfected=null;
             foreach(var h in hits)
             {
                 if(h.collider.gameObject==Hero.gameObject) continue;
                 var z=h.collider.GetComponent<Infected>();
                 var human=h.collider.GetComponent<HumanAgent>();
-                if(human!=null && !human.Downed) { human.Hit(20); end=h.point; break; }
-                if(z!=null && !z.Downed) { z.Hit(20,1.6f,Hero.forward*.25f); end=h.point; break; }
+                if(human!=null && !human.Downed) { struckHuman=human; end=h.point; break; }
+                if(z!=null && !z.Downed) { struckInfected=z; end=h.point; break; }
                 if(h.collider.gameObject.layer==8) { end=h.point; break; }
             }
+            ReportGunfire(origin,Hero.forward,end,struckHuman);
+            if(struckHuman) struckHuman.Hit(20);
+            if(struckInfected) struckInfected.Hit(20,1.6f,Hero.forward*.25f);
             var tracer=new GameObject("Shot tracer"); var line=tracer.AddComponent<LineRenderer>();
             tracer.transform.position=origin;
             line.sharedMaterial=amber; line.startWidth=.07f; line.endWidth=.02f; line.positionCount=2;

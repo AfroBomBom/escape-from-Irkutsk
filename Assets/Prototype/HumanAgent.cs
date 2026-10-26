@@ -25,7 +25,8 @@ namespace IrkutskPrototype
         Transform ignored;
         int waypoint;
         static readonly Vector3[] PatrolPoints={new Vector3(23,0,8),new Vector3(20,0,12),new Vector3(0,0,10),new Vector3(-16,0,0),new Vector3(-1,0,-10),new Vector3(20,0,-8),new Vector3(27,0,1)};
-        void Awake() { controller=GetComponent<CharacterController>(); }
+        void Awake()
+        { controller=GetComponent<CharacterController>(); if(!GetComponent<ShotReactionZone>()) gameObject.AddComponent<ShotReactionZone>(); }
         void Start() { home=transform.position; waypoint=Role==HumanRole.Soldier?1:0; }
         void LateUpdate() { if(Caption) { Caption.transform.rotation=Quaternion.Euler(65,0,0); if(!Downed) Caption.text=name+": "+State+(IsIncapacitated?" "+BleedoutRemaining.ToString("F0")+" с":""); } }
         public void Hit(float damage,bool playerCaused=true,Transform attacker=null)

@@ -139,12 +139,6 @@ namespace IrkutskPrototype
             if(person.Role==HumanRole.Medic || person.Role==HumanRole.Soldier) PatrolHostile=true;
             CloseInteraction();
         }
-        public void ReportGunfire(Vector3 origin)
-        {
-            WarnCivilians(origin);
-            foreach(var person in Humans)
-                if(person.gameObject.activeInHierarchy && !person.Downed && !person.IsIncapacitated && person.IsPatrol && Sight.CanSee(person.transform,Hero,Sight.HumanRange,Sight.HumanAngle)) { PatrolAttacked(person); break; }
-        }
         public void PatrolAttacked(HumanAgent witness=null)
         {
             PatrolHostile=true;

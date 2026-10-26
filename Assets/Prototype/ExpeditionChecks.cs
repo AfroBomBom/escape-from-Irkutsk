@@ -52,7 +52,7 @@ namespace IrkutskPrototype
             Set(g,"<Scanned>k__BackingField",false); Set(g,"infection",50f); Set(g,"scanProgress",2f); Call(g,"TickExpedition");
             Assert(g.Scanned && g.PatrolHostile,"infected scan authorizes soldier fire");
             Set(g,"infection",0f); Set(g,"<Scanned>k__BackingField",false); Set(g,"<PatrolHostile>k__BackingField",false);
-            Move(g,g.Soldier.transform.position+Vector3.right*3); g.ReportGunfire(g.Hero.position);
+            Move(g,g.Soldier.transform.position+Vector3.right*3); g.Hero.forward=(g.Soldier.transform.position-g.Hero.position).normalized; g.ReportGunfire(g.Hero.position);
             g.Soldier.transform.forward=(g.Hero.position-g.Soldier.transform.position).normalized; g.ReportGunfire(g.Hero.position);
             Assert(g.PatrolHostile,"visible armed resistance alerts patrol");
             Set(g,"<PatrolHostile>k__BackingField",false); Set(g,"detainProgress",0f); Set(g,"scanProgress",0f);

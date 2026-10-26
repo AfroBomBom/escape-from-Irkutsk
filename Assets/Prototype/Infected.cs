@@ -14,6 +14,7 @@ namespace IrkutskPrototype
         float suspicion,lastHeard=-10,investigateAt;
         Vector3 pendingNoise;
         readonly Queue<Vector3> route=new Queue<Vector3>();
+        void Awake() { if(!GetComponent<ShotReactionZone>()) gameObject.AddComponent<ShotReactionZone>(); }
         void Start() { controller=GetComponent<CharacterController>(); hands=transform.Find("Hands"); home=transform.position; destination=home; }
         void LateUpdate() { if(hands && !Downed) hands.localPosition=new Vector3(0,1,windupUntil>0?.8f:.5f); }
         public void Hear(Vector3 point,float radius=4)
