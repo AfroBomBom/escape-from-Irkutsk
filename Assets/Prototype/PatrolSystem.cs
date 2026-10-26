@@ -21,7 +21,7 @@ namespace IrkutskPrototype
         public void ObserveAggression(Transform source)
         {
             foreach(var human in Humans)
-                if(human.IsPatrol && human.gameObject.activeInHierarchy && !human.Downed && !human.IsIncapacitated && Sight.CanSee(human.transform,source,12,Sight.HumanAngle)) { ConfirmThreat(human,source); break; }
+                if(human.IsPatrol && human.gameObject.activeInHierarchy && !human.Downed && !human.IsIncapacitated && Sight.CanSee(human.transform,source,Sight.HumanRange,Sight.HumanAngle)) { ConfirmThreat(human,source); break; }
         }
         public void ConfirmThreat(HumanAgent witness,Transform target)
         {
@@ -50,7 +50,7 @@ namespace IrkutskPrototype
             Transform chosen=null; float best=float.MaxValue;
             void Consider(Transform target)
             {
-                if(target==observer.transform || (observer.Ignores(target) && !Threat(target)) || !Alive(target) || !Sight.CanSee(observer.transform,target,12,Sight.HumanAngle)) return;
+                if(target==observer.transform || (observer.Ignores(target) && !Threat(target)) || !Alive(target) || !Sight.CanSee(observer.transform,target,Sight.HumanRange,Sight.HumanAngle)) return;
                 var human=target.GetComponent<HumanAgent>(); if(human && human.IsPatrol) return;
                 // Keep a visible engagement instead of restarting it for every nearer passer-by.
                 float score=Vector3.Distance(observer.transform.position,target.position)-(Threat(target)?20:0)-(target==observer.CurrentTarget?12:0);

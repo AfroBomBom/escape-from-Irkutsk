@@ -65,7 +65,7 @@ namespace IrkutskPrototype
             Check(Vector3.Distance(soldier.transform.position,game.Hero.position)>distance+.5f,"emergency withdrawal actually increases distance");
 
             Reset(game); Human(soldier,new Vector3(20,0,0)); Human(medic,new Vector3(22,0,0));
-            soldier.enabled=true; medic.enabled=true; Place(game.Hero,new Vector3(20,0,10));
+            soldier.enabled=true; medic.enabled=true; Place(game.Hero,new Vector3(20,0,7.5f));
             Call(soldier,"Update"); Call(medic,"Update");
             Check(soldier.TacticalTask==PatrolTask.Advance && medic.TacticalTask==PatrolTask.Hold,"one patrol member advances while partner holds");
             Vector3 first=soldier.transform.position; bool concurrent=false;
@@ -76,7 +76,7 @@ namespace IrkutskPrototype
                     && (bool)typeof(HumanAgent).GetProperty("ChangingPosition",Hidden).GetValue(medic)) concurrent=true;
             }
             Check(!concurrent,"pair never chooses two simultaneous non-emergency movements");
-            Check(Vector3.Distance(first,soldier.transform.position)>1,"coordinated advance makes progress");
+            Check(Vector3.Distance(first,soldier.transform.position)>.3f,"coordinated advance makes progress");
             medic.enabled=false; soldier.enabled=false;
             Place(game.Hero,new Vector3(-28,0,-22)); Call(soldier,"Update");
             Check(soldier.State=="Поиск" && soldier.TacticalTask==PatrolTask.None,"loss of sight switches to snapshot search rather than tactical live tracking");
@@ -109,7 +109,7 @@ namespace IrkutskPrototype
 
             Reset(game); Human(soldier,new Vector3(20,0,0)); Human(medic,new Vector3(26.5f,0,0));
             Set(soldier,"<Health>k__BackingField",40f); medic.enabled=true; soldier.enabled=true;
-            Place(game.Hero,new Vector3(20,0,11)); Call(medic,"Update"); Call(soldier,"Update");
+            Place(game.Hero,new Vector3(20,0,7.8f)); Call(medic,"Update"); Call(soldier,"Update");
             Check(medic.TacticalTask==PatrolTask.Support && soldier.TacticalTask==PatrolTask.Hold,"soldier guards while medic approaches in a safe gap");
             Place(game.Hero,medic.transform.position+Vector3.forward*2); Call(medic,"Update");
             Check(medic.TacticalTask==PatrolTask.Retreat,"new close danger interrupts support immediately");

@@ -80,7 +80,7 @@ namespace IrkutskPrototype
             soldier.enabled=false; Call(medic,"Update");
             Check(medic.TacticalTask!=PatrolTask.FollowRear,"unavailable soldier releases medic to independent behavior");
 
-            Pair(new Vector3(22,0,-1),new Vector3(20,0,0)); yield return null; Engage(new Vector3(20,0,9));
+            Pair(new Vector3(22,0,-1),new Vector3(20,0,0)); yield return null; Engage(new Vector3(20,0,7.8f));
             var cover=Instantiate(Resources.Load<GameObject>("Cover/LowCover"),new Vector3(20,0,4),Quaternion.identity); Physics.SyncTransforms();
             Call(medic,"Update"); Check(!medic.SelectedCover,"medic does not select cover ahead of the combat leader");
             Destroy(cover); yield return null;

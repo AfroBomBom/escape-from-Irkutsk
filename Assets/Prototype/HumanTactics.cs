@@ -17,7 +17,7 @@ namespace IrkutskPrototype
             float closest=8;
             void Notice(Transform target)
             {
-                if(!target.gameObject.activeInHierarchy || !Sight.CanSee(transform,target,8,Sight.HumanAngle)) return;
+                if(!target.gameObject.activeInHierarchy || !Sight.CanSee(transform,target,Sight.HumanRange,Sight.HumanAngle)) return;
                 float d=Vector3.Distance(transform.position,target.position);
                 if(d<closest) { closest=d; Frighten(target.position); }
             }
@@ -74,7 +74,7 @@ namespace IrkutskPrototype
             Transform seen=null; float best=float.MaxValue;
             void Consider(Transform candidate)
             {
-                if(!Game.Alive(candidate) || !Sight.CanSee(transform,candidate,12,Sight.HumanAngle)) return;
+                if(!Game.Alive(candidate) || !Sight.CanSee(transform,candidate,Sight.HumanRange,Sight.HumanAngle)) return;
                 float score=Vector3.Distance(transform.position,candidate.position)-(candidate==CurrentTarget?3:0);
                 if(score<best) { best=score; seen=candidate; }
             }

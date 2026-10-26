@@ -143,7 +143,7 @@ namespace IrkutskPrototype
         {
             WarnCivilians(origin);
             foreach(var person in Humans)
-                if(!person.Downed && !person.IsIncapacitated && person.IsPatrol && Sight.CanSee(person.transform,Hero,12,Sight.HumanAngle)) { PatrolAttacked(person); break; }
+                if(person.gameObject.activeInHierarchy && !person.Downed && !person.IsIncapacitated && person.IsPatrol && Sight.CanSee(person.transform,Hero,Sight.HumanRange,Sight.HumanAngle)) { PatrolAttacked(person); break; }
         }
         public void PatrolAttacked(HumanAgent witness=null)
         {

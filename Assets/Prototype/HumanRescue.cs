@@ -121,7 +121,7 @@ namespace IrkutskPrototype
                     if(!patient.IsPatrol || !patient.IsIncapacitated || !patient.gameObject.activeInHierarchy || patient.Rescuer) continue;
                     float distance=Vector3.Distance(transform.position,patient.transform.position);
                     bool known=patient==knownCasualty && Time.time<casualtyUntil && Vector3.Distance(patient.transform.position,casualtyPoint)<.5f;
-                    bool visible=Sight.CanSee(transform,patient.transform,12,Sight.HumanAngle);
+                    bool visible=Sight.CanSee(transform,patient.transform,Sight.HumanRange,Sight.HumanAngle);
                     if(visible) { knownCasualty=patient; casualtyPoint=patient.transform.position; casualtyUntil=Time.time+patient.BleedoutRemaining; }
                     if(distance<nearest && (known || visible)) { nearest=distance; chosen=patient; }
                 }

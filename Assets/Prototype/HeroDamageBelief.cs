@@ -15,7 +15,7 @@ namespace IrkutskPrototype
         {
             return Game && !Game.IsOver && !Game.IsDriving && Game.Hero && Game.Hero.gameObject.activeInHierarchy
                 && isActiveAndEnabled && !Downed && !IsIncapacitated && !IsDetained
-                && Sight.CanSee(transform,Game.Hero,12,Sight.HumanAngle);
+                && Sight.CanSee(transform,Game.Hero,Sight.HumanRange,Sight.HumanAngle);
         }
         void ObserveHeroDamageMemory()
         {
@@ -29,7 +29,7 @@ namespace IrkutskPrototype
             if(actualDamage<=0 || !shooter || !CanObserveHeroHealth() || Role==HumanRole.Civilian) return;
             bool own=shooter==this;
             bool ally=(IsPatrol && shooter.IsPatrol) || (Role==HumanRole.Marauder && shooter.Role==HumanRole.Marauder);
-            if(!own && (!ally || !Sight.CanSee(transform,shooter.transform,12,Sight.HumanAngle))) return;
+            if(!own && (!ally || !Sight.CanSee(transform,shooter.transform,Sight.HumanRange,Sight.HumanAngle))) return;
             KnownHeroDamage=Mathf.Min(100,KnownHeroDamage+actualDamage);
             if(own) OwnConfirmedHeroDamage=Mathf.Min(100,OwnConfirmedHeroDamage+actualDamage);
         }

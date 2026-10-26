@@ -82,11 +82,11 @@ namespace IrkutskPrototype
             Place(soldier.transform,new Vector3(20,0,5)); soldier.transform.forward=Vector3.back;
             Place(game.Hero,new Vector3(20,0,-.97f));
             var posture=game.Hero.GetComponent<ActorPosture>(); posture.TrySetCrouched(false); game.Fog.Refresh();
-            Check(!Sight.Clear(ActorPosture.Eye(soldier.transform),ActorPosture.Chest(game.Hero)) && Sight.CanSee(soldier.transform,game.Hero,12,110),"low obstacle hides torso while standing head remains visible");
+            Check(!Sight.Clear(ActorPosture.Eye(soldier.transform),ActorPosture.Chest(game.Hero)) && Sight.CanSee(soldier.transform,game.Hero,Sight.HumanRange,Sight.HumanAngle),"low obstacle hides torso while standing head remains visible");
             Capture(game,"cover-standing");
             Check(posture.TrySetCrouched(true) && Mathf.Abs(game.Controller.height-1)<.01f && Mathf.Abs(game.Controller.center.y-.5f)<.01f,"crouch reduces actual collider height while keeping feet grounded");
             Check(game.Hero.Find("Posture visuals").localScale.y<.6f,"crouch lowers visible character geometry as well as collider");
-            Check(!Sight.CanSee(soldier.transform,game.Hero,12,110) && !game.SelectPatrolTarget(soldier),"crouching behind low cover hides hero from NPC perception");
+            Check(!Sight.CanSee(soldier.transform,game.Hero,Sight.HumanRange,Sight.HumanAngle) && !game.SelectPatrolTarget(soldier),"crouching behind low cover hides hero from NPC perception");
             game.Fog.Refresh();
             Check(!game.Fog.IsVisible(soldier.transform) && !soldier.GetComponentInChildren<Renderer>().enabled,"crouched player fog is blocked by low obstacle");
             Capture(game,"cover-crouching");
@@ -113,7 +113,7 @@ namespace IrkutskPrototype
             Check(soldier.Health<health,"standing pistol muzzle clears low obstacle and can hit target");
 
             Place(game.Hero,new Vector3(0,0,-.97f)); Place(soldier.transform,new Vector3(0,0,5)); soldier.transform.forward=Vector3.back;
-            Check(!Sight.CanSee(soldier.transform,game.Hero,12,110),"high cover hides standing character too");
+            Check(!Sight.CanSee(soldier.transform,game.Hero,Sight.HumanRange,Sight.HumanAngle),"high cover hides standing character too");
             Set(game,"hp",100f); game.SoldierShot(soldier);
             Check((float)Get(game,"hp")==100,"high cover physically blocks standing-target fire");
             Place(game.Hero,new Vector3(20,0,-.97f)); posture.TrySetCrouched(true);

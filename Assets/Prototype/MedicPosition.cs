@@ -37,7 +37,7 @@ namespace IrkutskPrototype
             {
                 if(!retreat && TryUseRegisteredCover()) { SetTask(PatrolTask.Cover,SelectedCover.transform.position); return true; }
                 SetTask(PatrolTask.Hold,transform.position); State=retreat?"Держу тыл при отходе":"Позади солдата";
-                if(targetVisible) FaceTarget(); FireIfSafe(); return true;
+                FaceMedicThreat(); FireIfSafe(); return true;
             }
             if(!retreat && behind>=-.3f && PartnerMoving()) { HoldAndCover(); return true; }
             ReleaseCover();
@@ -59,7 +59,13 @@ namespace IrkutskPrototype
             }
             SetTask(PatrolTask.FollowRear,medicRearGoal); State=retreat?"Отхожу за солдатом":"Занимаю тыл солдата";
             Quaternion facing=transform.rotation; MoveTo(medicRearGoal,.45f,2.4f); transform.rotation=facing;
-            if(targetVisible) FaceTarget(); FireIfSafe(); return true;
+            FaceMedicThreat(); FireIfSafe(); return true;
+        }
+        void FaceMedicThreat()
+        {
+            if(targetVisible) { FaceTarget(); return; }
+            Vector3 direction=lastSeen-transform.position; direction.y=0;
+            if(direction.sqrMagnitude>.01f) transform.rotation=Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(direction),Time.deltaTime*6);
         }
         public bool ReceiveHealingDart(float amount)
         {

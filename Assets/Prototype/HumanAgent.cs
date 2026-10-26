@@ -120,6 +120,7 @@ namespace IrkutskPrototype
                         When("Есть источник шума",()=>!CurrentTarget && HasSoundClue,Run("Осторожно проверить",InvestigateSound)),
                         When("Слабый звук",()=>!CurrentTarget && ListeningToWeakSound(),Run("Прислушаться",ListenToSound)),
                         When("Целей нет",()=>!CurrentTarget,Run("Обходить маршрут",Roam)),
+                        When("Врач держит тыл по докладу",()=>!targetVisible && CombatLeader(),Run("Сохранить позицию поддержки",()=>MedicRearSupport())),
                         When("Цель потеряна",()=>!targetVisible,Run("Искать по последней позиции",Search)),
                         Steps("Видимая цель",
                             Do("Повернуться к цели",FaceTarget),
