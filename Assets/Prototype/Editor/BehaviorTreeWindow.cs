@@ -35,6 +35,13 @@ namespace IrkutskPrototype
             else { EditorGUILayout.LabelField("Выбери человека или заражённого."); return; }
             EditorGUILayout.LabelField("Состояние",state);
             EditorGUILayout.LabelField("Цель",target?target.name:"Нет");
+            if(actor is HumanAgent observer)
+            {
+                EditorGUILayout.LabelField("Оценка урона герою",observer.KnownHeroDamage.ToString("F0")+" (свой: "+observer.OwnConfirmedHeroDamage.ToString("F0")+")");
+                EditorGUILayout.LabelField("Оценка HP героя",observer.EstimatedHeroHealth.ToString("F0"));
+                EditorGUILayout.LabelField("Память урона",observer.HeroDamageMemoryRemaining.ToString("F1")+" с");
+                EditorGUILayout.LabelField("Преимущество по HP",observer.HasHeroHealthAdvantage?"Да":"Нет");
+            }
             if(actor is HumanAgent coverUser)
                 EditorGUILayout.LabelField("Укрытие",coverUser.SelectedCover?coverUser.SelectedCover.name:"Нет");
             if(actor is HumanAgent listener)

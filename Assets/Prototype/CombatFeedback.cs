@@ -28,7 +28,17 @@ namespace IrkutskPrototype
             {
                 if(hit.collider.gameObject==soldier.gameObject) continue;
                 end=hit.point;
-                if(hit.collider.gameObject==Hero.gameObject || hit.collider.gameObject==Car.gameObject) { if(soldier.Role==HumanRole.Medic) Dart(); else Damage(8); break; }
+                if(hit.collider.gameObject==Hero.gameObject)
+                {
+                    if(soldier.Role==HumanRole.Medic) Dart();
+                    else
+                    {
+                        float before=hp; Damage(8);
+                        if(!driving) ConfirmHeroDamage(soldier,before-hp);
+                    }
+                    break;
+                }
+                if(hit.collider.gameObject==Car.gameObject) { if(soldier.Role!=HumanRole.Medic) DamageCar(8); break; }
                 var z=hit.collider.GetComponent<Infected>();
                 if(z) { z.Hit(soldier.Role==HumanRole.Medic?0:20,soldier.Role==HumanRole.Medic?1.2f:.2f,direction*.1f,origin); break; }
                 var person=hit.collider.GetComponent<HumanAgent>();

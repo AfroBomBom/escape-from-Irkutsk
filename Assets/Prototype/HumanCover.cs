@@ -17,7 +17,8 @@ namespace IrkutskPrototype
                 if(slot && (!slot.Owner || slot.Owner==this) && Vector3.Distance(transform.position,slot.transform.position)<9 && slot.ProtectsFrom(lastSeen)) return true;
             return false;
         }
-        void ContinueCover() { if(!TryUseRegisteredCover()) Search(); }
+        void ContinueCover()
+        { if(Role==HumanRole.Marauder && TryPressWoundedHero()) return; if(!TryUseRegisteredCover()) Search(); }
         void ReleaseCover()
         {
             if(SelectedCover) SelectedCover.Release(this);
@@ -60,7 +61,7 @@ namespace IrkutskPrototype
                     if(canShoot)
                     {
                         if(Role==HumanRole.Marauder) Game.ObserveAggression(transform);
-                        Game.NpcShot(this,CurrentTarget); shotAt=Time.time+(Role==HumanRole.Soldier?.8f:Role==HumanRole.Medic?5:1.2f);
+                        Game.NpcShot(this,CurrentTarget); shotAt=Time.time+(Role==HumanRole.Soldier?.8f:Role==HumanRole.Medic?(HasHeroHealthAdvantage?3:5):1.2f);
                     }
                 }
                 if(Time.time>=peekUntil) { peeking=false; nextPeekAt=Time.time+2; coverArriveUntil=Time.time+5; }

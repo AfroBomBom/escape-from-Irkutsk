@@ -88,6 +88,7 @@ namespace IrkutskPrototype
         void MarauderFight()
         {
             State="Атака"; FaceTarget();
+            if(TryPressWoundedHero()) return;
             if(TryUseRegisteredCover()) return;
             if(RepositionIfBlocked()) return;
             if(Time.time>=shotAt) { Game.ObserveAggression(transform); Game.NpcShot(this,CurrentTarget); shotAt=Time.time+1.2f; }

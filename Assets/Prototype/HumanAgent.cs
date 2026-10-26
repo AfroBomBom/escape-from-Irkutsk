@@ -77,6 +77,7 @@ namespace IrkutskPrototype
         void Update()
         {
             TickIncapacitation();
+            ObserveHeroDamageMemory();
             lootUsedThisTick=false;
             coverUsedThisTick=false;
             taskFrame=-1;

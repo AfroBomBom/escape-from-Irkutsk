@@ -1,7 +1,7 @@
 using UnityEngine;
 namespace IrkutskPrototype
 {
-    public enum PatrolTask { None, Hold, Advance, Retreat, Reposition, Cover, Support, Rescue, GuardRescue, FollowRear }
+    public enum PatrolTask { None, Hold, Advance, Retreat, Reposition, Cover, Support, Rescue, GuardRescue, FollowRear, Press }
     public sealed partial class HumanAgent
     {
         public PatrolTask TacticalTask { get; private set; }
@@ -21,6 +21,7 @@ namespace IrkutskPrototype
             }
         }
         bool ChangingPosition => TacticalTask==PatrolTask.Advance || TacticalTask==PatrolTask.Retreat || TacticalTask==PatrolTask.Reposition
+            || (TacticalTask==PatrolTask.Press && Vector3.Distance(transform.position,taskGoal)>.5f)
             || TacticalTask==PatrolTask.FollowRear
             || (TacticalTask==PatrolTask.Rescue && rescuePatient && Vector3.Distance(transform.position,rescuePatient.transform.position)>1.6f)
             || (TacticalTask==PatrolTask.Support && Vector3.Distance(transform.position,taskGoal)>2.5f)
@@ -80,7 +81,7 @@ namespace IrkutskPrototype
             if(!CurrentTarget || !targetVisible || Time.time<shotAt || !NpcTactics.FiringLane(transform,CurrentTarget)) return;
             bool hero=Game.IsHero(CurrentTarget);
             if(Role==HumanRole.Medic && hero && (Game.IsDriving || Vector3.Distance(transform.position,lastSeen)>=7)) return;
-            Game.NpcShot(this,CurrentTarget); shotAt=Time.time+(Role==HumanRole.Soldier?.8f:hero?5:1.3f);
+            Game.NpcShot(this,CurrentTarget); shotAt=Time.time+(Role==HumanRole.Soldier?.8f:hero?(HasHeroHealthAdvantage?3:5):1.3f);
         }
         void HoldAndCover()
         {
@@ -106,6 +107,7 @@ namespace IrkutskPrototype
             if(MedicRearSupport()) return;
             if(!wounded && PartnerMoving() && (!SelectedCover || (!peeking && Vector3.Distance(transform.position,SelectedCover.transform.position)>.5f)))
             { HoldAndCover(); return; }
+            if(TryPressWoundedHero()) return;
             if(TryUseRegisteredCover()) { SetTask(PatrolTask.Cover,SelectedCover.transform.position); return; }
             if(wounded)
             {
