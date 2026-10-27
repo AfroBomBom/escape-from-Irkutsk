@@ -9,11 +9,14 @@ namespace IrkutskPrototype
         float strugglePower,struggleUntil,restraintGraceUntil;
         public bool HeroStruggling { get; private set; }
         public float EscapePower => strugglePower;
+        public string HeroCaptorName => restrainingMedic && restrainingMedic.Role==HumanRole.Soldier?"Солдат":"Врач";
+        public float StruggleResistance => restrainingMedic && restrainingMedic.Role==HumanRole.Soldier?.3f:.2f;
+        public float StruggleClickPower => restrainingMedic && restrainingMedic.Role==HumanRole.Soldier?.07f:.08f;
         public bool IsBindingHero(HumanAgent actor) => restrainingMedic==actor && actor;
         public bool HeroCaptureImmune => Time.time<restraintGraceUntil;
         bool HeroControlsLocked => restraintInputConsumed || HeroStunned || HeroStruggling || restrainingMedic;
         bool CanBindHero(HumanAgent medic) => medic && medic.enabled && medic.gameObject.activeInHierarchy
-            && medic.Role==HumanRole.Medic && !medic.Downed && !medic.IsIncapacitated && !medic.IsDetained
+            && medic.IsPatrol && (medic.Role!=HumanRole.Soldier || IsBindingHero(medic) || !medic.HasCaptureMedic) && !medic.Downed && !medic.IsIncapacitated && !medic.IsDetained
             && !medic.IsStunned && !medic.RescuePatient && !driving && !IsOver && !HeroCaptureImmune
             && Vector3.Distance(medic.transform.position,Hero.position)<=1.6f
             && Sight.VisibleBody(ActorPosture.Eye(medic.transform),Hero);
@@ -40,7 +43,7 @@ namespace IrkutskPrototype
         void AdvanceHeroStruggle(float elapsed,bool clicked)
         {
             if(!HeroStruggling) return;
-            strugglePower=Mathf.Clamp01(strugglePower-.2f*elapsed+(clicked?.08f:0));
+            strugglePower=Mathf.Clamp01(strugglePower-StruggleResistance*elapsed+(clicked?StruggleClickPower:0));
             if(strugglePower>=1) EscapeRestraint();
             else if(strugglePower<=0) FinishDetention();
             else if(Time.time>=struggleUntil)
@@ -56,7 +59,7 @@ namespace IrkutskPrototype
                 if(!HeroStruggling && !HeroStunned)
                 {
                     HeroStruggling=true; strugglePower=.5f; struggleUntil=Time.time+8; CloseInteraction();
-                    Say("Врач связывает тебя! Часто нажимай ЛКМ, чтобы вырваться");
+                    Say(HeroCaptorName+" связывает тебя! Часто нажимай ЛКМ, чтобы вырваться");
                 }
                 if(HeroStruggling)
                     AdvanceHeroStruggle(Time.deltaTime,Mouse.current!=null && Mouse.current.leftButton.wasPressedThisFrame);
@@ -64,8 +67,7 @@ namespace IrkutskPrototype
                 return;
             }
             bool close=!driving && Scanned && !PatrolHostile && !HeroCaptureImmune
-                && ((Medic && Medic.enabled && Medic.gameObject.activeInHierarchy && !Medic.Downed && !Medic.IsIncapacitated && !Medic.IsStunned && !Medic.RescuePatient && Sight.CanSee(Medic.transform,Hero,1.5f,Sight.HumanAngle))
-                || (Soldier && Soldier.enabled && Soldier.gameObject.activeInHierarchy && !Soldier.Downed && !Soldier.IsIncapacitated && !Soldier.IsStunned && !Soldier.RescuePatient && Sight.CanSee(Soldier.transform,Hero,1.5f,Sight.HumanAngle)));
+                && (Medic && Medic.enabled && Medic.gameObject.activeInHierarchy && !Medic.Downed && !Medic.IsIncapacitated && !Medic.IsStunned && !Medic.RescuePatient && Sight.CanSee(Medic.transform,Hero,1.5f,Sight.HumanAngle));
             detainProgress=close?detainProgress+Time.deltaTime:0;
             if(detainProgress>=3) FinishDetention();
         }
@@ -74,8 +76,8 @@ namespace IrkutskPrototype
             if(!HeroStruggling || IsOver) return;
             float x=width/2-230,y=height/2+70;
             Panel(new Rect(x,y,460,155));
-            GUI.Label(new Rect(x+18,y+10,424,30),"БОРЬБА С ВРАЧОМ",title);
-            GUI.Label(new Rect(x+18,y+46,424,28),"Часто нажимай ЛКМ, чтобы освободиться",normal);
+            GUI.Label(new Rect(x+18,y+10,424,30),HeroCaptorName=="Солдат"?"БОРЬБА С СОЛДАТОМ":"БОРЬБА С ВРАЧОМ",title);
+            GUI.Label(new Rect(x+18,y+46,424,28),HeroCaptorName=="Солдат"?"Солдат сильнее! Нажимай ЛКМ быстрее":"Часто нажимай ЛКМ, чтобы освободиться",normal);
             Color old=GUI.color; GUI.color=new Color(.2f,.2f,.2f); GUI.DrawTexture(new Rect(x+20,y+85,420,20),Texture2D.whiteTexture);
             GUI.color=new Color(.25f,.8f,.4f); GUI.DrawTexture(new Rect(x+20,y+85,420*strugglePower,20),Texture2D.whiteTexture); GUI.color=old;
             GUI.Label(new Rect(x+18,y+114,424,30),$"Освобождение {strugglePower:P0} • осталось {Mathf.Max(0,struggleUntil-Time.time):0.0} с",normal);

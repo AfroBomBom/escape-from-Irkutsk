@@ -115,13 +115,13 @@ namespace IrkutskPrototype
             Check(game.IsOver && !game.HeroStruggling,"binding completed before sedation expires requires no contest");
 
             Reset(); Place(game.Hero,new Vector3(-20,0,-20));
-            var marauder=game.SpawnHuman("Restraint check marauder",HumanRole.Marauder,new Vector3(20,0,3),material); marauder.enabled=false; medic.enabled=false; yield return null; medic.enabled=true; Physics.SyncTransforms();
+            var marauder=game.SpawnHuman("Restraint check marauder",HumanRole.Marauder,new Vector3(20,0,3),material); marauder.enabled=false; medic.enabled=false; yield return null; yield return new WaitForFixedUpdate(); medic.enabled=true; Physics.SyncTransforms();
             for(int i=0;i<8 && !marauder.IsStunned;i++) game.NpcShot(medic,marauder.transform);
             Check(marauder.IsStunned && Get(medic,"dartPatient") as Transform==marauder.transform,"actual dart hit on marauder assigns capture rather than continued ranged combat: stun="+marauder.IsStunned+" patient="+(Get(medic,"dartPatient") as Transform)+" doctor="+medic.transform.position+" target="+marauder.transform.position+" cc="+marauder.GetComponent<CharacterController>().enabled);
             Set(medic,"bindTime",3f); Call(medic,"Update");
             Check(marauder.IsDetained && !game.Alive(marauder.transform),"medic binds hostile human after dart");
 
-            Reset(); Place(game.Hero,new Vector3(-20,0,-20)); var infected=game.Zombies[0]; infected.gameObject.SetActive(true); infected.enabled=false; Place(infected.transform,new Vector3(20,0,3)); medic.enabled=false; yield return null; medic.enabled=true; Physics.SyncTransforms();
+            Reset(); Place(game.Hero,new Vector3(-20,0,-20)); var infected=game.Zombies[0]; infected.gameObject.SetActive(true); infected.enabled=false; Place(infected.transform,new Vector3(20,0,3)); medic.enabled=false; yield return null; yield return new WaitForFixedUpdate(); medic.enabled=true; Physics.SyncTransforms();
             for(int i=0;i<8 && Get(medic,"dartPatient") as Transform!=infected.transform;i++) game.NpcShot(medic,infected.transform);
             Check(Get(medic,"dartPatient") as Transform==infected.transform,"actual dart hit on infected assigns restraint task");
             int rep=game.Reputation; Set(medic,"bindTime",3f); Call(medic,"Update");

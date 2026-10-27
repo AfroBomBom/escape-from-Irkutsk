@@ -52,7 +52,7 @@ namespace IrkutskPrototype
         {
             game.enabled=false; Reset(game);
             var soldier=game.Soldier; var medic=game.Medic;
-            Human(soldier,new Vector3(20,0,0)); Place(game.Hero,new Vector3(20,0,5));
+            Human(soldier,new Vector3(20,0,0)); Human(medic,new Vector3(22,0,-2)); medic.enabled=true; medic.GetComponent<CharacterController>().enabled=false; Place(game.Hero,new Vector3(20,0,5));
             Call(soldier,"Update");
             Check(soldier.TacticalTask==PatrolTask.Hold,"soldier holds an effective firing distance");
             float hold=soldier.TaskHoldRemaining;
@@ -114,7 +114,7 @@ namespace IrkutskPrototype
             Place(game.Hero,medic.transform.position+Vector3.forward*2); Call(medic,"Update");
             Check(medic.TacticalTask==PatrolTask.Retreat,"new close danger interrupts support immediately");
 
-            Reset(game); Human(soldier,new Vector3(20,0,-.97f)); soldier.enabled=true;
+            Reset(game); Human(soldier,new Vector3(20,0,-.97f)); Human(medic,new Vector3(22,0,-2.5f)); medic.enabled=true; soldier.enabled=true;
             Place(game.Hero,new Vector3(20,0,5));
             var cover=Instantiate(Resources.Load<GameObject>("Cover/LowCover"),new Vector3(20,0,0),Quaternion.identity);
             Physics.SyncTransforms(); Call(soldier,"Update");

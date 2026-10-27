@@ -25,24 +25,25 @@ namespace IrkutskPrototype
             { CancelDartRestraint(); return false; }
             return true;
         }
-        void RestrainDartPatient()
+        void RestrainDartPatient() => RestrainTarget(dartPatient);
+        void RestrainTarget(Transform patient)
         {
-            CurrentTarget=dartPatient; FaceTarget(); ReleaseCover();
-            State="К оглушённому: связать";
-            if(Vector3.Distance(transform.position,dartPatient.position)>1.5f)
-            { bindTime=0; MoveTo(dartPatient.position,1.1f,2.7f); return; }
+            CurrentTarget=patient; FaceTarget(); ReleaseCover();
+            State="К задержанию";
+            if(Vector3.Distance(transform.position,patient.position)>1.5f)
+            { bindTime=0; MoveTo(patient.position,1.1f,2.7f); return; }
             State="Связываю";
-            if(Game.IsHero(dartPatient))
+            if(Game.IsHero(patient))
             {
                 if(Game.TryBindHero(this)) State=Game.HeroStruggling?"Борюсь: связываю":"Связываю героя";
                 return;
             }
-            var heldPerson=dartPatient.GetComponent<HumanAgent>(); if(heldPerson) heldPerson.Stun(.15f);
-            var heldInfected=dartPatient.GetComponent<Infected>(); if(heldInfected) heldInfected.HoldForRestraint();
+            var heldPerson=patient.GetComponent<HumanAgent>(); if(heldPerson) heldPerson.Stun(.15f);
+            var heldInfected=patient.GetComponent<Infected>(); if(heldInfected) heldInfected.HoldForRestraint();
             bindTime+=Time.deltaTime;
             if(bindTime<3) return;
-            var person=dartPatient.GetComponent<HumanAgent>(); if(person) person.Detain();
-            var infected=dartPatient.GetComponent<Infected>(); if(infected) infected.Restrain();
+            var person=patient.GetComponent<HumanAgent>(); if(person) person.Detain();
+            var infected=patient.GetComponent<Infected>(); if(infected) infected.Restrain();
             CancelDartRestraint(); CurrentTarget=null;
         }
     }

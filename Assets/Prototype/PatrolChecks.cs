@@ -37,7 +37,7 @@ namespace IrkutskPrototype
             Set(g.Medic,"<CurrentTarget>k__BackingField",infected.transform); Set(g.Medic,"scanTime",2f);
             Call(g.Medic,"Update"); Check(g.Checked(infected.transform) && g.Threat(infected.transform),"scan confirms infected NPC as threat");
             Set(g.Soldier,"shotAt",0f); g.Soldier.transform.rotation=Quaternion.identity;
-            Call(g.Soldier,"Update"); Check(g.SoldierTracers>tracers,"soldier attacks confirmed infected instead of only hero");
+            bool medicEnabled=g.Medic.enabled; g.Medic.enabled=true; Call(g.Soldier,"Update"); g.Medic.enabled=medicEnabled; Check(g.SoldierTracers>tracers,"soldier attacks confirmed infected instead of only hero");
             var victim=UnityEngine.Object.Instantiate(g.Citizen.gameObject); victim.SetActive(true);
             victim.GetComponent<HumanAgent>().Hit(200,false,infected.transform);
             Check(g.Reputation==rep && g.Money==money,"NPC fights do not charge hero for deaths"); UnityEngine.Object.Destroy(victim);

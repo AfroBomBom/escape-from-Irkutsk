@@ -67,10 +67,12 @@ namespace IrkutskPrototype
             Check(Vector3.Distance(game.Medic.transform.position,game.Soldier.transform.position)<3 && game.Soldier.Health>40,"medic approaches injured partner and heals in range");
 
             Isolate(game);
-            Human(game.Soldier,new Vector3(20,0,0)); Human(game.Medic,new Vector3(20,0,2)); game.Medic.enabled=false;
+            Human(game.Soldier,new Vector3(20,0,0)); Human(game.Medic,new Vector3(20,0,-2)); Set(game.Medic,"shotAt",Time.time+100);
+            var blocker=game.SpawnHuman("Friendly firing lane blocker",HumanRole.Soldier,new Vector3(20,0,2),game.Soldier.GetComponentInChildren<Renderer>().sharedMaterial); blocker.enabled=false;
+            yield return new WaitForFixedUpdate();
             Place(game.Hero,new Vector3(20,0,5)); Set(game,"<PatrolHostile>k__BackingField",true); game.Soldier.AlertTo(game.Hero);
             int shots=game.SoldierTracers;
-            Check(!NpcTactics.FiringLane(game.Soldier.transform,game.Hero),"friendly medic blocks soldier firing lane");
+            Check(!NpcTactics.FiringLane(game.Soldier.transform,game.Hero),"friendly patrol member blocks soldier firing lane");
             typeof(HumanAgent).GetMethod("Update",Hidden).Invoke(game.Soldier,null);
             Check(game.SoldierTracers==shots,"soldier holds fire while partner blocks target");
             Vector3 start=game.Soldier.transform.position;

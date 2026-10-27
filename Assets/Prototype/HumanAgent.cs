@@ -115,6 +115,8 @@ namespace IrkutskPrototype
                     Select("Выбрать задачу",
                         When("Можно спасти напарника",CanRescue,Run("Подойти и поднять",RescuePartner)),
                         When("Прикрыть спасение",ShouldGuardRescue,Run("Прикрывать врача",GuardRescue)),
+                        When("Солдат прикрывает задержание",ShouldGuardCapture,Run("Прикрывать врача",GuardCapture)),
+                        When("Солдат задерживает без врача",CanSoldierRestrain,Run("Подойти и связать цель",RestrainSoloTarget)),
                         When("Попал дротиком: связать",CanRestrainDartPatient,Run("Подойти и связать",RestrainDartPatient)),
                         When("Напарник отходит",MedicMustFollowRetreat,Run("Отойти за солдатом",()=>MedicRearSupport())),
                         When("Напарник ранен",NeedsSupport,Run("Подойти для лечения",AssistPartner)),

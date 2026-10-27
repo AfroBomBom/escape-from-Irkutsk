@@ -41,8 +41,10 @@ namespace IrkutskPrototype
             Place(game.Medic.transform,new Vector3(18,0,0)); Place(game.Soldier.transform,new Vector3(22,0,0));
             Place(game.Hero,new Vector3(20,0,-5));
             game.Medic.Hit(1);
-            int shots=game.SoldierTracers;
-            yield return new WaitForSeconds(3);
+            int shots=game.SoldierTracers; Set(game.Medic,"shotAt",Time.time+100);
+            float firingUntil=Time.time+3;
+            while((float)Get(game,"hp")>=100 && Time.time<firingUntil) yield return null;
+            Set(game.Medic,"shotAt",0f); yield return new WaitForSeconds(1.5f);
             Check(game.Medic.CurrentTarget==game.Hero && game.Soldier.CurrentTarget==game.Hero,"both patrol members pursue hero after attack from behind");
             Check(game.SoldierTracers>shots && (float)Get(game,"hp")<100,"hostile soldier fires and damages hero in real frames");
             Check((float)Get(game.Medic,"shotAt")>Time.time,"hostile medic fires tranquilizer against hero");

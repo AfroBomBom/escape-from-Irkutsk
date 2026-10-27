@@ -125,7 +125,7 @@ namespace IrkutskPrototype
             yield return new WaitForSeconds(6);
             Check(shooter.KnownHeroDamage==0,"actual ten second absence clears belief through live NPC updates");
 
-            Pair(); yield return null; Place(game.Hero,new Vector3(20,0,7.8f)); shooter.AlertTo(game.Hero); shooter.ObserveConfirmedHeroHit(shooter,48);
+            Pair(); Watch(); Place(observer.transform,new Vector3(20,0,-1.9f)); yield return null; Place(game.Hero,new Vector3(20,0,7.8f)); shooter.AlertTo(game.Hero); shooter.ObserveConfirmedHeroHit(shooter,48);
             Call(shooter,"Update");
             Check(shooter.HasHeroHealthAdvantage && shooter.TacticalTask==PatrolTask.Press,"large confirmed damage and HP advantage enable pressure task");
             Vector3 start=shooter.transform.position; yield return new WaitForSeconds(1);

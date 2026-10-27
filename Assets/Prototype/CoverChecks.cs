@@ -145,6 +145,7 @@ namespace IrkutskPrototype
             Place(game.Hero,new Vector3(20,0,5)); posture.TrySetCrouched(false); Set(game,"hp",100f);
             Set(soldier,"<Health>k__BackingField",100f); Set(soldier,"<CurrentTarget>k__BackingField",null);
             Set(soldier,"targetVisible",false); Set(soldier,"coverSeekAt",0f); Set(game,"<PatrolHostile>k__BackingField",true);
+            game.Medic.gameObject.SetActive(true); game.Medic.enabled=true; Place(game.Medic.transform,new Vector3(20,0,-3.5f)); Set(game.Medic,"shotAt",Time.time+100);
             soldier.enabled=true; soldier.AlertTo(game.Hero);
             yield return new WaitForSeconds(.15f);
             Check(soldier.SelectedCover==back && back.Owner==soldier && soldier.GetComponent<ActorPosture>().IsCrouched,"live NPC selects protecting slot and crouches behind low cover");
@@ -160,6 +161,7 @@ namespace IrkutskPrototype
             Check(peeked && game.SoldierTracers>shots,"live NPC leaves hiding position and fires from a peek point");
             Check(returned && soldier.SelectedCover==back,"live NPC returns and crouches after peeking");
             soldier.enabled=false; Check(!back.Owner,"disabling covering NPC frees its selected slot");
+            game.Medic.gameObject.SetActive(true); game.Medic.enabled=true; Place(game.Medic.transform,new Vector3(20,0,-3.5f)); Set(game.Medic,"shotAt",Time.time+100);
             soldier.enabled=true; soldier.AlertTo(game.Hero);
             yield return new WaitForSeconds(.15f);
             soldier.Hit(500);
