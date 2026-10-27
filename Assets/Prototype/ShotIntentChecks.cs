@@ -132,6 +132,42 @@ namespace IrkutskPrototype
             var civilian=game.SpawnHuman("Intent check civilian",HumanRole.Civilian,new Vector3(20,0,3),clothing); civilian.enabled=false;
             medic.transform.forward=(game.Hero.position-medic.transform.position).normalized; yield return null; Fire();
             Check(game.PatrolHostile && civilian.Health==80,"witnessed direct civilian hit remains assault rather than harmless noise");
+            Reset(new Vector3(21.2f,0,24)); yield return null; Fire();
+            Check(soldier.HasSoundClue && !game.PatrolHostile && !soldier.CurrentTarget,"passing bullet alerts distant patrol without identifying unseen shooter");
+            Check(Vector3.Distance(soldier.LastHeardPosition,game.Hero.position)<2 && (float)Get(soldier,"soundUntil")-Time.time>19,"passing shot stores source snapshot and twenty second search");
+            Place(game.Hero,new Vector3(-20,0,-20)); Vector3 snapshot=soldier.LastHeardPosition; float before=soldier.transform.position.z;
+            yield return new WaitForSeconds(1.2f);
+            Check(soldier.transform.position.z<before-.4f && soldier.State=="Проверяю шум","distant soldier moves toward the shot source rather than continuing patrol");
+            Check(soldier.LastHeardPosition==snapshot,"hidden shooter movement does not update bullet sound snapshot");
+            yield return new WaitForSeconds(8.2f);
+            Check(soldier.HasSoundClue && !game.PatrolHostile,"gunfire search remains active after the previous eight second limit");
+            soldier.HearNoise(soldier.transform.position,2.5f,null,NoiseKind.Movement);
+            Check(soldier.LastHeardPosition==snapshot,"quiet movement cannot replace active gunfire investigation");
+            Set(soldier,"soundUntil",Time.time-.1f); Set(soldier,"gunfireSearchUntil",Time.time-.1f); Set(soldier,"heardAt",Time.time-21);
+            yield return null;
+            Check(!soldier.HasSoundClue && soldier.State=="Обход","expired gunfire investigation returns to ordinary patrol");
+
+            Reset(new Vector3(25,0,24)); yield return null; Fire();
+            Check(!soldier.HasSoundClue && !game.PatrolHostile,"bullet more than four metres away does not create distant hearing");
+            Reset(new Vector3(21.2f,0,24)); wall=Wall(12); yield return null; Fire();
+            Check(!soldier.HasSoundClue,"wall stopping bullet before listener prevents passing shot reaction");
+            wall.SetActive(false); Destroy(wall);
+            Reset(new Vector3(21.2f,0,24)); wall=Wall(24); wall.transform.position=new Vector3(20.6f,1.5f,24); wall.transform.localScale=new Vector3(.3f,3,6); Physics.SyncTransforms(); yield return null; Fire();
+            Check(!soldier.HasSoundClue,"wall between flight path and listener blocks local bullet cue");
+            wall.SetActive(false); Destroy(wall);
+
+            Reset(new Vector3(27,0,20)); medic=game.SpawnHuman("Intent check distant medic",HumanRole.Medic,new Vector3(21.2f,0,24),clothing); medic.enabled=true; yield return null; Fire();
+            Check(medic.HasSoundClue && !medic.CurrentTarget && !game.PatrolHostile,"medic also investigates a passing bullet beyond ordinary shot hearing");
+            Reset(new Vector3(20,0,-24)); yield return null; Fire();
+            Check(!soldier.HasSoundClue,"listener behind muzzle does not hear an invented passing bullet");
+            Reset(new Vector3(24.5f,0,4)); yield return null; Fire();
+            Check((float)Get(soldier,"soundUntil")-Time.time>19,"ordinary audible gunshot also starts twenty second investigation");
+            Reset(new Vector3(21.2f,0,24)); yield return null; Fire();
+            yield return new WaitForSeconds(.6f); Fire();
+            Check((float)Get(soldier,"soundUntil")-Time.time>19,"fresh gunfire extends the search from the latest shot");
+            soldier.HearNoise(soldier.transform.position,14,null,NoiseKind.Gunshot);
+            yield return new WaitForSeconds(3);
+            Check(soldier.HasSoundClue && soldier.State=="Осматриваю источник шума" && (float)Get(soldier,"soundUntil")-Time.time>16,"arrival does not end gunfire search after the former two second inspection");
         }
     }
 }

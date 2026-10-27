@@ -7,6 +7,7 @@ namespace IrkutskPrototype
     {
         Vector3 soundPoint,checkedSoundPoint;
         float heardAt=-10,soundSuspicion,soundUntil,soundReadyAt,inspectUntil,noiseAcceptedAt=-10,checkedSoundUntil,reportAt;
+        float gunfireSearchUntil;
         public bool HasSoundClue=>Time.time<soundUntil;
         public Vector3 LastHeardPosition=>soundPoint;
 
@@ -16,7 +17,7 @@ namespace IrkutskPrototype
             var person=source?source.GetComponent<HumanAgent>():null;
             if(IsPatrol && person && person.IsPatrol) return;
             if(CurrentTarget && targetVisible) return;
-            if(kind!=NoiseKind.Gunshot && Time.time-noiseAcceptedAt<.25f) return;
+            if(kind!=NoiseKind.Gunshot && (Time.time-noiseAcceptedAt<.25f || (HasSoundClue && Time.time<gunfireSearchUntil))) return;
             float reach=Mathf.Min(radius,14);
             bool muffled=Physics.Linecast(transform.position+Vector3.up,origin+Vector3.up,EscapeGame.SolidMask);
             if(muffled) reach*=.4f;
@@ -31,8 +32,26 @@ namespace IrkutskPrototype
             soundPoint=estimate; heardAt=Time.time;
             soundSuspicion=Mathf.Min(2,soundSuspicion+(kind==NoiseKind.Gunshot || radius>=6?1:.55f));
             if(soundSuspicion<1) return;
-            soundUntil=Time.time+8;
+            if(kind==NoiseKind.Gunshot) { gunfireSearchUntil=Time.time+20; inspectUntil=0; }
+            soundUntil=kind==NoiseKind.Gunshot?gunfireSearchUntil:Time.time+8;
             if(!ongoing) { soundReadyAt=Time.time+.4f; inspectUntil=0; }
+        }
+        // A passing bullet is audible locally even when its muzzle is beyond hearing range.
+        public void HearPassingShot(Vector3 origin,Vector3 end)
+        {
+            if(!IsPatrol || !enabled || !gameObject.activeInHierarchy || Downed || IsIncapacitated || IsDetained) return;
+            if(CurrentTarget && targetVisible) return;
+            Vector3 flight=end-origin; float length=flight.magnitude; if(length<.01f) return;
+            Vector3 direction=flight/length, ear=ActorPosture.Eye(transform);
+            float along=Vector3.Dot(ear-origin,direction);
+            if(along<=0 || along>length) return;
+            Vector3 nearest=origin+direction*along;
+            if((nearest-ear).sqrMagnitude>16 || !Sight.Clear(nearest,ear)) return;
+            if(CurrentTarget && Game.Threat(CurrentTarget)) return;
+            CurrentTarget=null;
+            soundPoint=EstimateSound(origin); heardAt=noiseAcceptedAt=Time.time; soundSuspicion=2;
+            gunfireSearchUntil=soundUntil=Time.time+20; soundReadyAt=Time.time+.2f; inspectUntil=0;
+            routeAt=0; route.Clear(); State="Слышу пролёт пули";
         }
         Vector3 EstimateSound(Vector3 origin)
         {
@@ -59,7 +78,7 @@ namespace IrkutskPrototype
             if(Vector3.Distance(transform.position,soundPoint)>1.2f)
             { State="Проверяю шум"; MoveTo(soundPoint,1.1f,1.35f); return; }
             State="Осматриваю источник шума";
-            if(inspectUntil<=0) inspectUntil=Time.time+2;
+            if(inspectUntil<=0) inspectUntil=Time.time<gunfireSearchUntil?gunfireSearchUntil:Time.time+2;
             transform.Rotate(0,90*Time.deltaTime,0);
             if(Time.time>=inspectUntil)
             {
@@ -67,7 +86,7 @@ namespace IrkutskPrototype
                 ClearSoundClue();
             }
         }
-        void ClearSoundClue() { soundUntil=0; soundSuspicion=0; inspectUntil=0; heardAt=-10; }
+        void ClearSoundClue() { soundUntil=0; gunfireSearchUntil=0; soundSuspicion=0; inspectUntil=0; heardAt=-10; }
         void SawTarget(Transform target)
         {
             ClearSoundClue();

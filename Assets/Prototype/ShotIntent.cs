@@ -44,6 +44,7 @@ namespace IrkutskPrototype
         public void ReportGunfire(Vector3 origin,Vector3 direction,Vector3 end,HumanAgent hitPerson=null)
         {
             WarnCivilians(origin); LastShotHadAggressiveTarget=false; LastShotProtectedTarget=null;
+            foreach(var listener in Humans) if(listener) listener.HearPassingShot(origin,end);
             direction.y=0; if(direction.sqrMagnitude<.0001f) return; direction.Normalize();
             Vector3 delta=end-origin; delta.y=0; float length=delta.magnitude;
             foreach(var z in Zombies)
