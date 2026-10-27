@@ -147,14 +147,14 @@ namespace IrkutskPrototype
             foreach(var person in Humans)
                 if(person.IsPatrol && Vector3.Distance(person.transform.position,witness.transform.position)<=12) person.AlertTo(attacker);
         }
-        public void Dart()
-        { if((heroStunUntil>0 && Time.time<heroStunUntil+2) || IsOver) return; heroStunUntil=Time.time+1.2f; Say("Усыпляющий дротик! Оглушение 1,2 с"); }
+        public void Dart(HumanAgent medic=null)
+        { if((heroStunUntil>0 && Time.time<heroStunUntil+2) || IsOver || HeroStruggling || HeroCaptureImmune || restrainingMedic) return; heroStunUntil=Time.time+1.2f; if(medic) medic.TrackDartPatient(Hero); Say("Усыпляющий дротик! Оглушение 1,2 с"); }
         void TickExpedition()
         {
             if(Press(UnityEngine.InputSystem.Key.Escape)) CloseInteraction();
             if(Press(UnityEngine.InputSystem.Key.J)) { bool open=!journalOpen; CloseInteraction(); journalOpen=open; }
-            if(InteractionOpen && (HeroStunned || (shopOpen && !Near(shopPosition)) || (citizenOpen && (Citizen.Downed || !Near(Citizen.transform.position))))) CloseInteraction();
-            if(!driving && !HeroStunned && !shopUnlocked && !InteractionOpen && Key(UnityEngine.InputSystem.Key.F) && Near(shopPosition))
+            if(InteractionOpen && (HeroControlsLocked || (shopOpen && !Near(shopPosition)) || (citizenOpen && (Citizen.Downed || !Near(Citizen.transform.position))))) CloseInteraction();
+            if(!driving && !HeroControlsLocked && !shopUnlocked && !InteractionOpen && Key(UnityEngine.InputSystem.Key.F) && Near(shopPosition))
             {
                 breakProgress+=Time.deltaTime;
                 if(Time.time>=breakNoiseAt) { Noise(shopPosition,8,Hero,NoiseKind.Work); breakNoiseAt=Time.time+.7f; }
@@ -167,9 +167,7 @@ namespace IrkutskPrototype
                 if(scanProgress>=2) { Scanned=true; Change(0,0,Sick?"Сканирование: заражён, патруль открывает огонь":"Сканирование: здоров, попытка задержания"); if(Sick) PatrolAttacked(Medic); }
             }
             else if(!Scanned) scanProgress=0;
-            bool close=!driving && Scanned && !PatrolHostile && ((!Medic.Downed && !Medic.IsIncapacitated && !Medic.RescuePatient && Sight.CanSee(Medic.transform,Hero,1.5f,Sight.HumanAngle)) || (!Soldier.Downed && !Soldier.IsIncapacitated && !Soldier.RescuePatient && Sight.CanSee(Soldier.transform,Hero,1.5f,Sight.HumanAngle)));
-            detainProgress=close?detainProgress+Time.deltaTime:0;
-            if(detainProgress>=3) { detained=true; finalTime=Time.time-started; bag.Clear(); CloseInteraction(); Change(0,0,"Задержание: добыча конфискована"); }
+            TickHeroRestraint();
         }
         bool HeroStunned => Time.time<heroStunUntil;
         void DrawExpedition(float width,float height)
@@ -186,6 +184,7 @@ namespace IrkutskPrototype
             if(detainProgress>0) warning+=$" • ЗАДЕРЖАНИЕ {detainProgress/3:P0}";
             GUI.Label(new Rect(width/2-250,60,500,55),warning,normal);
             if(BreakingIn) GUI.Label(new Rect(width/2-190,115,420,40),$"ВСКРЫТИЕ {breakProgress/3:P0} • удерживай F",normal);
+            DrawHeroRestraint(width,height);
             if(!InteractionOpen || IsOver) return;
             if(journalOpen)
             {

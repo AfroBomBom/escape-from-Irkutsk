@@ -13,7 +13,7 @@ namespace IrkutskPrototype
         {
             if(!target || !target.gameObject.activeInHierarchy) return false;
             var human=target.GetComponent<HumanAgent>(); if(human) return !human.Downed && !human.IsIncapacitated && !human.IsDetained;
-            var z=target.GetComponent<Infected>(); if(z) return !z.Downed;
+            var z=target.GetComponent<Infected>(); if(z) return !z.Downed && !z.IsDetained;
             return IsHero(target) && !IsOver;
         }
         public void RegisterThreat(Transform target)

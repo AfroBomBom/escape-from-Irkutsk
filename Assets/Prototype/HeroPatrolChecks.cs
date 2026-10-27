@@ -38,7 +38,7 @@ namespace IrkutskPrototype
             game.enabled=false;
             foreach(var z in game.Zombies) { z.enabled=false; z.gameObject.SetActive(false); }
             foreach(var h in game.Humans) if(!h.IsPatrol) h.gameObject.SetActive(false);
-            Place(game.Medic.transform,new Vector3(20,0,0)); Place(game.Soldier.transform,new Vector3(22,0,0));
+            Place(game.Medic.transform,new Vector3(18,0,0)); Place(game.Soldier.transform,new Vector3(22,0,0));
             Place(game.Hero,new Vector3(20,0,-5));
             game.Medic.Hit(1);
             int shots=game.SoldierTracers;
@@ -73,6 +73,8 @@ namespace IrkutskPrototype
             yield return new WaitForSeconds(.3f);
             Check((float)Get(game,"heroStunUntil")>0,"medic stuns scanned healthy hero for detention");
             Set(game,"<Scanned>k__BackingField",false); Set(game,"scanProgress",0f); Set(game,"infection",50f);
+            game.Medic.CancelDartRestraint(); Set(game,"restrainingMedic",null); Set(game,"<HeroStruggling>k__BackingField",false);
+            Set(game,"detainProgress",0f); Set(game,"heroStunUntil",0f);
             Place(game.Medic.transform,new Vector3(20,0,0)); Place(game.Soldier.transform,new Vector3(22,0,0));
             Place(game.Hero,new Vector3(20,0,2.6f));
             shots=game.SoldierTracers;

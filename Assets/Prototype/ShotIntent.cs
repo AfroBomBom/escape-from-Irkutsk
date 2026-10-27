@@ -14,7 +14,7 @@ namespace IrkutskPrototype
                 Vector3 delta=enemy.position-unit.position; delta.y=0;
                 return delta.sqrMagnitude<=Sight.HumanRange*Sight.HumanRange && Sight.VisibleBody(ActorPosture.Eye(unit),enemy);
             }
-            foreach(var z in Zombies) if(z && !z.Downed && z.gameObject.activeInHierarchy && Nearby(z.transform)) return zone.Radius;
+            foreach(var z in Zombies) if(z && !z.Downed && !z.IsDetained && z.gameObject.activeInHierarchy && Nearby(z.transform)) return zone.Radius;
             foreach(var h in Humans) if(h && h.Role==HumanRole.Marauder && !h.Downed && !h.IsDetained && h.gameObject.activeInHierarchy && Nearby(h.transform)) return zone.Radius;
             return zone.PeacefulSoldierRadius;
         }
@@ -48,7 +48,7 @@ namespace IrkutskPrototype
             direction.y=0; if(direction.sqrMagnitude<.0001f) return; direction.Normalize();
             Vector3 delta=end-origin; delta.y=0; float length=delta.magnitude;
             foreach(var z in Zombies)
-                if(z && !z.Downed && z.gameObject.activeInHierarchy && CrossesShotZone(z.transform,origin,direction,length))
+                if(z && !z.Downed && !z.IsDetained && z.gameObject.activeInHierarchy && CrossesShotZone(z.transform,origin,direction,length))
                 { LastShotHadAggressiveTarget=true; break; }
             if(!LastShotHadAggressiveTarget)
                 foreach(var h in Humans)

@@ -30,7 +30,7 @@ namespace IrkutskPrototype
                 end=hit.point;
                 if(hit.collider.gameObject==Hero.gameObject)
                 {
-                    if(soldier.Role==HumanRole.Medic) Dart();
+                    if(soldier.Role==HumanRole.Medic) Dart(soldier);
                     else
                     {
                         float before=hp; Damage(8);
@@ -40,12 +40,12 @@ namespace IrkutskPrototype
                 }
                 if(hit.collider.gameObject==Car.gameObject) { if(soldier.Role!=HumanRole.Medic) DamageCar(8); break; }
                 var z=hit.collider.GetComponent<Infected>();
-                if(z) { z.Hit(soldier.Role==HumanRole.Medic?0:20,soldier.Role==HumanRole.Medic?1.2f:.2f,direction*.1f,origin); break; }
+                if(z) { z.Hit(soldier.Role==HumanRole.Medic?0:20,soldier.Role==HumanRole.Medic?1.2f:.2f,direction*.1f,origin); if(soldier.Role==HumanRole.Medic) soldier.TrackDartPatient(z.transform); break; }
                 var person=hit.collider.GetComponent<HumanAgent>();
                 if(person)
                 {
                     if(!soldier.IsPatrol || !person.IsPatrol)
-                    { if(soldier.Role==HumanRole.Medic) person.Stun(1.2f); else person.Hit(15,false,soldier.transform); }
+                    { if(soldier.Role==HumanRole.Medic) { person.Stun(1.2f); soldier.TrackDartPatient(person.transform); } else person.Hit(15,false,soldier.transform); }
                     break;
                 }
                 if(hit.collider.gameObject.layer==8) break;

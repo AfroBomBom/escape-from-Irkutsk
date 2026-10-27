@@ -14,7 +14,7 @@ namespace IrkutskPrototype
         BehaviorNode BuildBehavior()
         {
             return Select("Заражённый",
-                When("Оглушён / недоступен",()=>EscapeGame.Instance==null || EscapeGame.Instance.IsOver || Downed || Time.time<stunnedUntil,Run("Ждать",()=>{})),
+                When("Оглушён / недоступен",()=>EscapeGame.Instance==null || EscapeGame.Instance.IsOver || Downed || IsDetained || Time.time<stunnedUntil,Run("Ждать",()=>{})),
                 Steps("Найти добычу",Do("Обзор, слух и память",Perceive),
                     Select("Решение",
                         When("Видимая добыча рядом",()=>targetVisible && InBiteRange(),Run("Замах и укус",Bite)),

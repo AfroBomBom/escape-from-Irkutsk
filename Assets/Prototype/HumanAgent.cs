@@ -46,7 +46,7 @@ namespace IrkutskPrototype
             }
         }
         public void Detain() { if(Downed || IsIncapacitated) return; CancelRescue(); IsDetained=true; DropLoot(); State="В карантин"; CurrentTarget=null; }
-        public void Stun(float seconds) { stunnedUntil=Time.time+seconds; }
+        public void Stun(float seconds) { stunnedUntil=Mathf.Max(stunnedUntil,Time.time+seconds); }
         public bool Ignores(Transform target)=>target==ignored && Time.time<ignoreUntil;
         public void AlertTo(Transform target)
         {
@@ -115,6 +115,7 @@ namespace IrkutskPrototype
                     Select("Выбрать задачу",
                         When("Можно спасти напарника",CanRescue,Run("Подойти и поднять",RescuePartner)),
                         When("Прикрыть спасение",ShouldGuardRescue,Run("Прикрывать врача",GuardRescue)),
+                        When("Попал дротиком: связать",CanRestrainDartPatient,Run("Подойти и связать",RestrainDartPatient)),
                         When("Напарник отходит",MedicMustFollowRetreat,Run("Отойти за солдатом",()=>MedicRearSupport())),
                         When("Напарник ранен",NeedsSupport,Run("Подойти для лечения",AssistPartner)),
                         When("Использую укрытие",CanContinueCover,Run("Тактика из укрытия",Fight)),

@@ -6,7 +6,10 @@ namespace IrkutskPrototype
     public sealed partial class Infected : MonoBehaviour
     {
         public bool Downed { get; private set; }
-        public string Status => Time.time<stunnedUntil?"ОГЛУШЁН":windupUntil>0?"! ЗАМАХ":targetVisible?"! ПОГОНЯ":alertUntil>Time.time?"! ПОИСК":Time.time-lastHeard<3 && suspicion>0?"? ШУМ":"";
+        public bool IsDetained { get; private set; }
+        public void Restrain() { if(Downed) return; IsDetained=true; CurrentTarget=null; windupUntil=0; }
+        public void HoldForRestraint() { stunnedUntil=Mathf.Max(stunnedUntil,Time.time+.15f); }
+        public string Status => IsDetained?"СВЯЗАН":Time.time<stunnedUntil?"ОГЛУШЁН":windupUntil>0?"! ЗАМАХ":targetVisible?"! ПОГОНЯ":alertUntil>Time.time?"! ПОИСК":Time.time-lastHeard<3 && suspicion>0?"? ШУМ":"";
         CharacterController controller;
         Transform hands;
         Vector3 home, destination;
@@ -21,7 +24,7 @@ namespace IrkutskPrototype
         {
             float reach=Mathf.Min(radius,9);
             if(Physics.Linecast(transform.position+Vector3.up,point+Vector3.up,EscapeGame.SolidMask)) reach*=.45f;
-            if(Downed || Vector3.Distance(transform.position,point)>reach) return;
+            if(Downed || IsDetained || Vector3.Distance(transform.position,point)>reach) return;
             if(Time.time-lastHeard>3) suspicion=0;
             lastHeard=Time.time; pendingNoise=point; suspicion+=radius>=10?1:.55f;
             if(suspicion>=1 && investigateAt<=0) investigateAt=Time.time+.9f;

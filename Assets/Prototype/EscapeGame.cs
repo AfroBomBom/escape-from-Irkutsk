@@ -178,15 +178,15 @@ namespace IrkutskPrototype
             if(IsOver) return;
             TickExpedition();
             if(IsOver) return;
-            if(!driving && !InteractionOpen && !BreakingIn && Time.time>=heroStunUntil && Press(UnityEngine.InputSystem.Key.C))
+            if(!driving && !InteractionOpen && !BreakingIn && !HeroControlsLocked && Press(UnityEngine.InputSystem.Key.C))
             {
                 var posture=Hero.GetComponent<ActorPosture>();
                 if(!posture.TrySetCrouched(!posture.IsCrouched)) Say("Над головой препятствие: встать нельзя");
                 if(Fog) Fog.Refresh();
             }
-            if(!InteractionOpen && !BreakingIn && Time.time>=heroStunUntil) { if(driving) Drive(); else Walk(); }
-            if(Press(UnityEngine.InputSystem.Key.E) && Time.time>=heroStunUntil) Interact();
-            if(!driving && !InteractionOpen && !BreakingIn && Time.time>=heroStunUntil)
+            if(!InteractionOpen && !BreakingIn && !HeroControlsLocked) { if(driving) Drive(); else Walk(); }
+            if(Press(UnityEngine.InputSystem.Key.E) && !HeroControlsLocked) Interact();
+            if(!driving && !InteractionOpen && !BreakingIn && !HeroControlsLocked)
             {
                 if((Mouse.current!=null && Mouse.current.leftButton.wasPressedThisFrame)||Press(UnityEngine.InputSystem.Key.Space)) Punch();
                 if((Mouse.current!=null && Mouse.current.rightButton.wasPressedThisFrame)||Press(UnityEngine.InputSystem.Key.Q)) Shoot();
@@ -194,7 +194,7 @@ namespace IrkutskPrototype
             }
             if(reloadAt>0 && Time.time>=reloadAt) { ammo=6; reloadAt=0; }
             arm.localPosition=new Vector3(-.43f,1.3f,Time.time<attackAt-.32f?.75f:.3f);
-            if(hp<=0 || durability<=0) { dead=true; finalTime=Time.time-started; }
+            if(hp<=0 || durability<=0) { dead=true; finalTime=Time.time-started; HeroStruggling=false; restrainingMedic=null; detainProgress=0; }
         }
         void LateUpdate() { if(view!=null) UpdateCamera(false); }
         void UpdateCamera(bool instant)

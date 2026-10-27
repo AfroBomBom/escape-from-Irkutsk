@@ -47,7 +47,8 @@ namespace IrkutskPrototype
             g.Dart(); Assert((float)Read(g,"heroStunUntil")==stunned,"dart immunity prevents an immediate stun chain");
             Set(g,"heroStunUntil",0f);
             Move(g,g.Medic.transform.position+Vector3.right*.8f);
-            Set(g,"detainProgress",3f); Call(g,"TickExpedition");
+            bool medicEnabled=g.Medic.enabled; g.Medic.enabled=true;
+            Set(g,"detainProgress",3f); Call(g,"TickExpedition"); g.Medic.enabled=medicEnabled;
             Assert(g.IsOver,"close patrol completes detention"); Set(g,"detained",false);
             Set(g,"<Scanned>k__BackingField",false); Set(g,"infection",50f); Set(g,"scanProgress",2f); Call(g,"TickExpedition");
             Assert(g.Scanned && g.PatrolHostile,"infected scan authorizes soldier fire");
