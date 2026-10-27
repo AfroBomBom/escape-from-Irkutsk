@@ -56,7 +56,7 @@ namespace IrkutskPrototype
             int i=Index(point);
             if(i<0 || pixels[i].g==0 || game==null) return false;
             float personal=game.IsDriving?2.2f:1.5f;
-            if(Vector2.Distance(new Vector2(point.x,point.z),new Vector2(game.Target.x,game.Target.z))>personal && !Sight.InCone(game.Target,game.IsDriving?game.Car.forward:game.Hero.forward,point,game.IsDriving?14:Sight.HeroRange,Sight.HeroAngle)) return false;
+            if(Vector2.Distance(new Vector2(point.x,point.z),new Vector2(game.Target.x,game.Target.z))>personal && !Sight.InCone(game.Target,game.IsDriving?game.Car.forward:game.Hero.forward,point,Sight.HeroRange,Sight.HeroAngle)) return false;
             // Grid cells can straddle a wall. Check the exact point for labels/actors as well.
             Vector3 eye=ActorPosture.Eye(game.IsDriving?game.Car:game.Hero);
             Vector3 target=new Vector3(point.x,eye.y,point.z);
@@ -69,7 +69,7 @@ namespace IrkutskPrototype
             Transform viewer=game.IsDriving?game.Car:game.Hero;
             float personal=game.IsDriving?2.2f:1.5f;
             bool nearby=Vector2.Distance(new Vector2(actor.position.x,actor.position.z),new Vector2(game.Target.x,game.Target.z))<=personal;
-            return (nearby || Sight.InCone(viewer.position,viewer.forward,actor.position,game.IsDriving?14:Sight.HeroRange,Sight.HeroAngle)) && Sight.VisibleBody(ActorPosture.Eye(viewer),actor);
+            return (nearby || Sight.InCone(viewer.position,viewer.forward,actor.position,Sight.HeroRange,Sight.HeroAngle)) && Sight.VisibleBody(ActorPosture.Eye(viewer),actor);
         }
         void LateUpdate()
         {
@@ -82,11 +82,9 @@ namespace IrkutskPrototype
             if(game==null || map==null) return;
             for(int i=0;i<pixels.Length;i++) pixels[i].g=0;
             Vector3 eye=ActorPosture.Eye(game.IsDriving?game.Car:game.Hero);
-            float radius=game.IsDriving?14:Sight.HeroRange;
-            int minX=Mathf.Max(0,Mathf.FloorToInt(eye.x-radius-Origin.x));
-            int maxX=Mathf.Min(Width-1,Mathf.CeilToInt(eye.x+radius-Origin.x));
-            int minZ=Mathf.Max(0,Mathf.FloorToInt(eye.z-radius-Origin.y));
-            int maxZ=Mathf.Min(Height-1,Mathf.CeilToInt(eye.z+radius-Origin.y));
+            float radius=Sight.HeroRange;
+            // The map bounds limit iteration; the viewer has no distance cutoff.
+            int minX=0, maxX=Width-1, minZ=0, maxZ=Height-1;
             for(int z=minZ;z<=maxZ;z++) for(int x=minX;x<=maxX;x++)
             {
                 Vector3 destination=new Vector3(Origin.x+x+.5f,eye.y,Origin.y+z+.5f);
@@ -120,7 +118,7 @@ namespace IrkutskPrototype
             {
                 bool explored=IsExplored(text.transform.position);
                 text.GetComponent<Renderer>().enabled=explored;
-                text.color=IsVisible(text.transform.position)?Color.white:new Color(.35f,.35f,.35f);
+                text.color=IsVisible(text.transform.position)?Color.white:new Color(.6f,.6f,.6f);
             }
         }
         void OnDestroy()

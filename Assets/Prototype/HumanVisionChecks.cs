@@ -36,7 +36,7 @@ namespace IrkutskPrototype
             game.Soldier=soldier; game.Medic=medic;
             foreach(var h in new[]{soldier,medic,marauder}) { Set(h,"shotAt",Time.time+100); game.Fog.RegisterDynamic(h.gameObject); }
             Set(medic,"healAt",Time.time+100); Set(game,"<PatrolHostile>k__BackingField",false);
-            Check(Sight.HumanRange==8 && Sight.HeroRange==10 && Sight.InfectedRange==6,"human, hero and infected sight ranges are eight, ten and six metres");
+            Check(Sight.HumanRange==8 && float.IsPositiveInfinity(Sight.HeroRange) && Sight.InfectedRange==6,"human and infected ranges stay eight and six metres while hero has unlimited range");
             Check(Sight.HumanAngle==110 && Sight.HeroAngle==120 && Sight.ScannerRange==3.2f,"vision sectors and short range scanner keep their existing limits");
             Place(game.Hero,new Vector3(20,0,9)); game.Hero.forward=Vector3.back; game.Fog.Refresh();
             Check(game.Fog.IsVisible(soldier.transform),"hero fog reveals a standing soldier nine metres ahead");
@@ -68,6 +68,18 @@ namespace IrkutskPrototype
             int shots=game.SoldierTracers; Call(medic,"Update");
             Check(medic.State=="Позади солдата" && medic.transform.position.z< -2.5f,"medic retains rear formation from partner report when enemy is beyond own sight");
             Check(game.SoldierTracers==shots,"rear medic does not fire at enemy beyond eight metre vision");
+            Place(game.Hero,new Vector3(40,0,0)); game.Hero.forward=Vector3.right;
+            Place(soldier.transform,new Vector3(110,0,0)); game.Fog.Refresh();
+            Check(game.Fog.IsVisible(new Vector3(115,0,0)) && game.Fog.IsExplored(new Vector3(115,0,0)),"fog reveals terrain seventy five metres ahead near map edge");
+            Check(game.Fog.IsVisible(soldier.transform) && soldier.GetComponentInChildren<Renderer>().enabled,"distant actors inside sector are visible without a range cutoff");
+            Check(!game.Fog.IsVisible(new Vector3(40,0,15)),"unlimited distance preserves the original sector angle");
+            game.Hero.forward=Vector3.left; game.Fog.Refresh();
+            Check(!game.Fog.IsVisible(soldier.transform) && game.Fog.IsExplored(new Vector3(115,0,0)),"turning away hides distant actors but keeps terrain memory");
+            game.Hero.forward=Vector3.right;
+            var distantWall=GameObject.CreatePrimitive(PrimitiveType.Cube); distantWall.layer=8;
+            distantWall.transform.position=new Vector3(70,1.5f,0); distantWall.transform.localScale=new Vector3(.5f,3,10); Physics.SyncTransforms(); game.Fog.Refresh();
+            Check(!game.Fog.IsVisible(new Vector3(115,0,0)) && !game.Fog.IsVisible(soldier.transform),"walls still block terrain and actors with unlimited hero range");
+            distantWall.SetActive(false); Destroy(distantWall);
         }
     }
 }

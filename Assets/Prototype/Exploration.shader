@@ -46,7 +46,7 @@ Shader "Irkutsk/Exploration"
                 if(_FogDynamic>.5) clip(state.g-.5);
                 half lighting=.65+.35*saturate(dot(normalize(input.normal),normalize(half3(-.3,1,-.4))));
                 half3 color=_BaseColor.rgb*lighting;
-                half gray=dot(color,half3(.2126,.7152,.0722))*.48;
+                half gray=dot(color,half3(.2126,.7152,.0722))*.8 + .06;
                 half3 remembered=gray.xxx;
                 half3 result=lerp(_ExplorationDarkness.rgb,remembered,state.r);
                 result=lerp(result,color,state.g);

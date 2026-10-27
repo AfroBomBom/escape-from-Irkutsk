@@ -3,7 +3,7 @@ namespace IrkutskPrototype
 {
     public static class Sight
     {
-        public const float HeroRange=10, HeroAngle=120, InfectedRange=6, InfectedAngle=100, HumanRange=8, HumanAngle=110, ScannerRange=3.2f;
+        public const float HeroRange=float.PositiveInfinity, HeroAngle=120, InfectedRange=6, InfectedAngle=100, HumanRange=8, HumanAngle=110, ScannerRange=3.2f;
         public static bool InCone(Vector3 origin,Vector3 forward,Vector3 target,float range,float angle)
         {
             Vector3 delta=target-origin; delta.y=0; forward.y=0;

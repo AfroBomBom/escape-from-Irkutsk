@@ -128,11 +128,11 @@ namespace IrkutskPrototype
             Vector3 remembered=new Vector3(0,0,-10);
             Check(game.Fog.IsVisible(remembered) && game.Fog.IsExplored(remembered),"current view is revealed");
             Check(!game.Fog.IsExplored(new Vector3(90,0,0)),"unvisited highway is unknown");
-            Teleport(game,new Vector3(20,0,-10)); game.Fog.Refresh();
+            Teleport(game,new Vector3(20,0,-10)); game.Hero.forward=Vector3.right; game.Fog.Refresh();
             Check(game.Fog.IsExplored(remembered) && !game.Fog.IsVisible(remembered),"departed ground remains explored but not visible");
             Check(!game.Zombies[0].GetComponentInChildren<Renderer>().enabled,"offscreen infected hidden");
             Check(!game.Parts[0].GetComponent<Renderer>().enabled,"offscreen loot hidden");
-            Teleport(game,new Vector3(4,0,3)); game.Fog.Refresh();
+            Teleport(game,new Vector3(4,0,3)); game.Hero.forward=Vector3.forward; game.Fog.Refresh();
             Check(!game.Fog.IsVisible(new Vector3(4,0,11)),"fog view does not pass through building");
             Teleport(game,new Vector3(4,0,11)); game.Fog.Refresh();
             Check(!game.Fog.IsVisible(new Vector3(4,0,9.3f)),"exact visibility rejects objects just behind a wall");
