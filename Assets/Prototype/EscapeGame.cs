@@ -90,13 +90,14 @@ namespace IrkutskPrototype
             float wall=.3f, doorway=2.6f, half=(width-doorway)/2;
             float front=z+(northEntrance?depth/2:-depth/2), back=z+(northEntrance?-depth/2:depth/2);
             Box(name+" floor",new Vector3(x,.035f,z),new Vector3(width,.07f,depth),snow,false);
-            Box(name+" back",new Vector3(x,height/2,back),new Vector3(width,height,wall),steel);
+            var backWall=Box(name+" back",new Vector3(x,height/2,back),new Vector3(width,height,wall),steel);
             Box(name+" west",new Vector3(x-width/2,height/2,z),new Vector3(wall,height,depth),steel);
             Box(name+" east",new Vector3(x+width/2,height/2,z),new Vector3(wall,height,depth),steel);
             float sideOffset=(width+doorway)/4;
-            Box(name+" front left",new Vector3(x-sideOffset,height/2,front),new Vector3(half,height,wall),steel);
-            Box(name+" front right",new Vector3(x+sideOffset,height/2,front),new Vector3(half,height,wall),steel);
-            Box(name+" furniture",new Vector3(x-width*.22f,.45f,z+(northEntrance?-depth*.23f:depth*.23f)),new Vector3(1.2f,.9f,1),dark);
+            var frontLeft=Box(name+" front left",new Vector3(x-sideOffset,height/2,front),new Vector3(half,height,wall),steel);
+            var frontRight=Box(name+" front right",new Vector3(x+sideOffset,height/2,front),new Vector3(half,height,wall),steel);
+            BuildHouseInterior(name,x,z,width,depth,northEntrance);
+            RegisterHouseView(x,z,width,depth,northEntrance?new[]{backWall}:new[]{frontLeft,frontRight});
         }
         GameObject Label(string text, Vector3 p, Color color, float size = .3f)
         {
@@ -214,7 +215,7 @@ namespace IrkutskPrototype
             arm.localPosition=new Vector3(-.43f,1.3f,Time.time<attackAt-.32f?.75f:.3f);
             if(hp<=0 || durability<=0) { dead=true; finalTime=Time.time-started; HeroStruggling=false; restrainingMedic=null; detainProgress=0; }
         }
-        void LateUpdate() { if(view!=null) UpdateCamera(false); RefreshPlayerNoiseIndicator(); }
+        void LateUpdate() { if(view!=null) UpdateCamera(false); RefreshPlayerNoiseIndicator(); UpdateHouseWalls(); }
         void UpdateCamera(bool instant)
         {
             var focus=driving?Car.position:Hero.position;
@@ -263,6 +264,7 @@ namespace IrkutskPrototype
         {
             if(driving) { Say("Доедь до зелёной линии в конце трассы"); return; }
             if(InteractionOpen) { CloseInteraction(); return; }
+            if(TryHouseInteraction()) return;
             if(TryExpeditionInteraction()) return;
             if(Vector3.Distance(Hero.position,Car.position)<4.2f)
             {
