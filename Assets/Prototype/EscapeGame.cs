@@ -56,6 +56,7 @@ namespace IrkutskPrototype
             BuildExpedition();
             BuildCombat();
             Fog=gameObject.AddComponent<FogOfWar>(); Fog.Initialize(this);
+            BuildPlayerNoiseIndicator();
             sound = gameObject.AddComponent<AudioSource>(); sound.spatialBlend = 0;
             shotClip = Tone(120, .12f); hitClip = Tone(65,.08f);
         }
@@ -84,6 +85,19 @@ namespace IrkutskPrototype
             for (float a=-w/2+1; a<w/2; a+=2)
                 Box("Window",new Vector3(x+a,2,z-d/2-.02f),new Vector3(.8f,1,.08f),amber,false);
         }
+        void EnterableHouse(string name,float x,float z,float width,float depth,float height,bool northEntrance)
+        {
+            float wall=.3f, doorway=2.6f, half=(width-doorway)/2;
+            float front=z+(northEntrance?depth/2:-depth/2), back=z+(northEntrance?-depth/2:depth/2);
+            Box(name+" floor",new Vector3(x,.035f,z),new Vector3(width,.07f,depth),snow,false);
+            Box(name+" back",new Vector3(x,height/2,back),new Vector3(width,height,wall),steel);
+            Box(name+" west",new Vector3(x-width/2,height/2,z),new Vector3(wall,height,depth),steel);
+            Box(name+" east",new Vector3(x+width/2,height/2,z),new Vector3(wall,height,depth),steel);
+            float sideOffset=(width+doorway)/4;
+            Box(name+" front left",new Vector3(x-sideOffset,height/2,front),new Vector3(half,height,wall),steel);
+            Box(name+" front right",new Vector3(x+sideOffset,height/2,front),new Vector3(half,height,wall),steel);
+            Box(name+" furniture",new Vector3(x-width*.22f,.45f,z+(northEntrance?-depth*.23f:depth*.23f)),new Vector3(1.2f,.9f,1),dark);
+        }
         GameObject Label(string text, Vector3 p, Color color, float size = .3f)
         {
             var go = new GameObject(text); go.transform.position=p; go.transform.rotation=Quaternion.Euler(65,0,0);
@@ -109,6 +123,10 @@ namespace IrkutskPrototype
             Wall(new Vector3(75,.6f,7),new Vector3(88,1.2f,.5f)); Wall(new Vector3(75,.6f,-7),new Vector3(88,1.2f,.5f));
             Building(-10,17,14,8); Building(12,18,12,6); Building(16,-17,13,8);
             Building(-25,7,7,11); Building(4,7,6,5);
+            // Open-top interiors let the overhead camera see through each actual doorway.
+            EnterableHouse("Small house",-22,21.5f,4.5f,5,2.8f,false);
+            EnterableHouse("Medium house",-2,-21,6,5,4,true);
+            EnterableHouse("Large house",26,-21,8,6,6,true);
             // Open-roof garage, wide east entrance.
             Box("Garage floor",new Vector3(-17,.02f,-12),new Vector3(14,.1f,12),dark,false);
             Wall(new Vector3(-24,1.5f,-12),new Vector3(.5f,3,12));
@@ -196,7 +214,7 @@ namespace IrkutskPrototype
             arm.localPosition=new Vector3(-.43f,1.3f,Time.time<attackAt-.32f?.75f:.3f);
             if(hp<=0 || durability<=0) { dead=true; finalTime=Time.time-started; HeroStruggling=false; restrainingMedic=null; detainProgress=0; }
         }
-        void LateUpdate() { if(view!=null) UpdateCamera(false); }
+        void LateUpdate() { if(view!=null) UpdateCamera(false); RefreshPlayerNoiseIndicator(); }
         void UpdateCamera(bool instant)
         {
             var focus=driving?Car.position:Hero.position;
@@ -305,9 +323,13 @@ namespace IrkutskPrototype
         }
         public void Noise(Vector3 position,float radius,Transform source=null,NoiseKind kind=NoiseKind.Unknown)
         {
+            if(source==Hero || source==Car)
+            {
+                EmitPlayerNoise(radius,source,kind); return;
+            }
             noisePosition=position; noiseRadius=radius; noiseUntil=Time.time+.45f;
-            foreach(var z in Zombies) if(!z.Downed && Vector3.Distance(z.transform.position,position)<radius) z.Hear(position,radius);
-            foreach(var human in Humans) human.HearNoise(position,radius,source,kind);
+            foreach(var z in Zombies) if(z && !z.Downed && z.gameObject.activeInHierarchy && Vector3.Distance(z.transform.position,position)<radius) z.Hear(position,radius);
+            foreach(var human in Humans) if(human) human.HearNoise(position,radius,source,kind);
         }
         public void Damage(float value,bool infect=false)
         { if(IsOver) return; if(driving) DamageCar(value); else { float before=hp; hp=Mathf.Max(0,hp-value); ShowDamage(before-hp,"ЗДОРОВЬЕ"); if(infect) infection=Mathf.Min(100,infection+8); } }
@@ -367,7 +389,7 @@ namespace IrkutskPrototype
                 GUI.Label(new Rect(width/2-280,height/2-20,560,50),finished?$"Время: {finalTime:0} с. Машина сохранена на {durability:0}%.":detained?"Добыча конфискована. Нажми F5 для нового забега.":"Зомби или столкновения остановили тебя.",normal);
                 if(GUI.Button(new Rect(width/2-130,height/2+45,260,40),"Начать заново (F5)")) SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
-            DrawDamageFeedback(width,height);
+            DrawDamageFeedback(width,height); DrawPlayerNoise(width);
         }
         void Panel(Rect rect) { var old=GUI.color; GUI.color=new Color(.06f,.09f,.12f,.92f); GUI.DrawTexture(rect,Texture2D.whiteTexture); GUI.color=old; }
         void OnDrawGizmos()

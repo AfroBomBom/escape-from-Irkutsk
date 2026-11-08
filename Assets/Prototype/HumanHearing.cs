@@ -11,18 +11,26 @@ namespace IrkutskPrototype
         public bool HasSoundClue=>Time.time<soundUntil;
         public Vector3 LastHeardPosition=>soundPoint;
 
-        public void HearNoise(Vector3 origin,float radius,Transform source=null,NoiseKind kind=NoiseKind.Unknown)
+        public void HearNoise(Vector3 origin,float radius,Transform source=null,NoiseKind kind=NoiseKind.Unknown,bool propagatedPlayerSound=false)
         {
-            if(!enabled || !gameObject.activeInHierarchy || Downed || IsIncapacitated || IsDetained || Role==HumanRole.Civilian || source==transform || radius<=0) return;
+            if(!enabled || !gameObject.activeInHierarchy || Downed || IsIncapacitated || IsDetained || source==transform || radius<=0) return;
+            if(Role==HumanRole.Civilian)
+            {
+                if(propagatedPlayerSound && kind==NoiseKind.Gunshot) Frighten(origin);
+                return;
+            }
             var person=source?source.GetComponent<HumanAgent>():null;
             if(IsPatrol && person && person.IsPatrol) return;
             if(CurrentTarget && targetVisible) return;
             if(kind!=NoiseKind.Gunshot && (Time.time-noiseAcceptedAt<.25f || (HasSoundClue && Time.time<gunfireSearchUntil))) return;
-            float reach=Mathf.Min(radius,14);
-            bool muffled=Physics.Linecast(transform.position+Vector3.up,origin+Vector3.up,EscapeGame.SolidMask);
-            if(muffled) reach*=.4f;
-            Vector3 delta=origin-transform.position; delta.y=0;
-            if(delta.magnitude>reach) return;
+            if(!propagatedPlayerSound)
+            {
+                float reach=Mathf.Min(radius,14);
+                bool muffled=Physics.Linecast(transform.position+Vector3.up,origin+Vector3.up,EscapeGame.SolidMask);
+                if(muffled) reach*=.4f;
+                Vector3 delta=origin-transform.position; delta.y=0;
+                if(delta.magnitude>reach) return;
+            }
             Vector3 estimate=EstimateSound(origin);
             if(kind!=NoiseKind.Gunshot && Time.time<checkedSoundUntil && Vector3.Distance(estimate,checkedSoundPoint)<3) return;
             noiseAcceptedAt=Time.time;

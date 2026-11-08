@@ -20,11 +20,15 @@ namespace IrkutskPrototype
         void Awake() { if(!GetComponent<ShotReactionZone>()) gameObject.AddComponent<ShotReactionZone>(); }
         void Start() { controller=GetComponent<CharacterController>(); hands=transform.Find("Hands"); home=transform.position; destination=home; }
         void LateUpdate() { if(hands && !Downed) hands.localPosition=new Vector3(0,1,windupUntil>0?.8f:.5f); }
-        public void Hear(Vector3 point,float radius=4)
+        public void Hear(Vector3 point,float radius=4,bool propagatedPlayerSound=false)
         {
-            float reach=Mathf.Min(radius,9);
-            if(Physics.Linecast(transform.position+Vector3.up,point+Vector3.up,EscapeGame.SolidMask)) reach*=.45f;
-            if(Downed || IsDetained || Vector3.Distance(transform.position,point)>reach) return;
+            if(Downed || IsDetained) return;
+            if(!propagatedPlayerSound)
+            {
+                float reach=Mathf.Min(radius,9);
+                if(Physics.Linecast(transform.position+Vector3.up,point+Vector3.up,EscapeGame.SolidMask)) reach*=.45f;
+                if(Vector3.Distance(transform.position,point)>reach) return;
+            }
             if(Time.time-lastHeard>3) suspicion=0;
             lastHeard=Time.time; pendingNoise=point; suspicion+=radius>=10?1:.55f;
             if(suspicion>=1 && investigateAt<=0) investigateAt=Time.time+.9f;
