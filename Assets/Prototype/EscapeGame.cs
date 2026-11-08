@@ -52,8 +52,10 @@ namespace IrkutskPrototype
             asphalt = Mat(new Color(.27f,.30f,.33f)); snow = Mat(new Color(.70f,.76f,.76f));
             steel = Mat(new Color(.43f,.46f,.48f)); amber = Mat(new Color(1f,.75f,.15f));
             red = Mat(new Color(.75f,.17f,.16f));
+            InitializeWorldGeneration();
             BuildWorld();
             BuildExpedition();
+            BuildRandomInfected();
             BuildCombat();
             Fog=gameObject.AddComponent<FogOfWar>(); Fog.Initialize(this);
             BuildPlayerNoiseIndicator();
@@ -113,21 +115,18 @@ namespace IrkutskPrototype
             RenderSettings.ambientLight = new Color(.68f,.72f,.77f);
             var sun = new GameObject("Sun").AddComponent<Light>(); sun.type=LightType.Directional;
             sun.intensity=1.5f; sun.transform.rotation=Quaternion.Euler(55,-35,0);
-            Box("City ground",new Vector3(0,-.3f,0),new Vector3(64,.5f,52),snow);
-            Box("Courtyard",new Vector3(0,-.02f,0),new Vector3(53,.08f,43),asphalt,false);
+            Box("City ground",new Vector3(-18.5f,-.3f,0),new Vector3(100,.5f,98),snow);
+            Box("Courtyard",new Vector3(-18.5f,-.02f,0),new Vector3(97,.08f,95),asphalt,false);
             Box("Highway ground",new Vector3(75,-.3f,0),new Vector3(90,.5f,22),snow);
             Box("Highway",new Vector3(75,-.02f,0),new Vector3(90,.08f,12),asphalt,false);
             for(int i=0;i<16;i++) Box("Lane marking",new Vector3(32+i*5,.03f,0),new Vector3(2,.02f,.13f),amber,false);
-            Wall(new Vector3(-31,1,0),new Vector3(1,2,52));
-            Wall(new Vector3(0,1,25),new Vector3(64,2,1)); Wall(new Vector3(0,1,-25),new Vector3(64,2,1));
-            Wall(new Vector3(31,1,16),new Vector3(1,2,20)); Wall(new Vector3(31,1,-16),new Vector3(1,2,20));
+            Wall(new Vector3(-68,1,0),new Vector3(1,2,98));
+            Wall(new Vector3(-18.5f,1,48),new Vector3(100,2,1)); Wall(new Vector3(-18.5f,1,-48),new Vector3(100,2,1));
+            Wall(new Vector3(31,1,27),new Vector3(1,2,42)); Wall(new Vector3(31,1,-27),new Vector3(1,2,42));
             Wall(new Vector3(75,.6f,7),new Vector3(88,1.2f,.5f)); Wall(new Vector3(75,.6f,-7),new Vector3(88,1.2f,.5f));
             Building(-10,17,14,8); Building(12,18,12,6); Building(16,-17,13,8);
             Building(-25,7,7,11); Building(4,7,6,5);
-            // Open-top interiors let the overhead camera see through each actual doorway.
-            EnterableHouse("Small house",-22,21.5f,4.5f,5,2.8f,false);
-            EnterableHouse("Medium house",-2,-21,6,5,4,true);
-            EnterableHouse("Large house",26,-21,8,6,6,true);
+            BuildRandomHouses();
             // Open-roof garage, wide east entrance.
             Box("Garage floor",new Vector3(-17,.02f,-12),new Vector3(14,.1f,12),dark,false);
             Wall(new Vector3(-24,1.5f,-12),new Vector3(.5f,3,12));
@@ -168,16 +167,6 @@ namespace IrkutskPrototype
             arm=Box("Fist",new Vector3(-.43f,1.3f,.3f),new Vector3(.2f,.25f,.45f),snow,false,Hero).transform;
             gun=Box("Pistol",new Vector3(.4f,1.3f,.4f),new Vector3(.15f,.2f,.55f),dark,false,Hero).transform;
             Hero.gameObject.AddComponent<ActorPosture>();
-            Vector3[] enemies={new Vector3(-18,0,10),new Vector3(13,0,10),new Vector3(20,0,-10),new Vector3(43,0,-3),new Vector3(59,0,2),new Vector3(70,0,-2),new Vector3(87,0,3),new Vector3(95,0,-3)};
-            foreach(var p in enemies)
-            {
-                var z=new GameObject("Infected"); z.transform.position=p;
-                var cc=z.AddComponent<CharacterController>(); cc.height=1.8f; cc.radius=.35f; cc.center=Vector3.up*.9f;
-                Box("Torso",new Vector3(0,1,0),new Vector3(.65f,1,.45f),green,false,z.transform);
-                Box("Head",new Vector3(0,1.7f,0),new Vector3(.45f,.4f,.45f),snow,false,z.transform);
-                Box("Hands",new Vector3(0,1,.5f),new Vector3(1,.2f,.2f),green,false,z.transform);
-                var enemy=z.AddComponent<Infected>(); Zombies.Add(enemy);
-            }
             view=new GameObject("Overhead camera").AddComponent<Camera>(); view.orthographic=true; view.orthographicSize=15;
             view.transform.rotation=Quaternion.Euler(65,0,0); view.farClipPlane=180; view.backgroundColor=dark.color;
             view.gameObject.AddComponent<AudioListener>(); UpdateCamera(true);

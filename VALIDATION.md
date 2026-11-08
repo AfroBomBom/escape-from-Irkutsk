@@ -241,3 +241,11 @@ Unity 6000.6.6f1 успешно собрала Windows-версию. Перед 
 Unity 6000.6.6f1 успешно собрала Windows-версию. На окончательной сборке прошли 287 проверок: 57 интерьеров, 25 проходов в дома, 70 полного базового сценария, 42 лута мародёров, 22 шума, 34 укрытий и 37 стрельбы/реакции на пролёт пули. Сценарий интерьеров находит каждый вид мебели в каждом доме, физически проводит CharacterController от двери к обоим контейнерам, использует настоящие события E, проверяет существующие типы вещей, заполненный рюкзак и повторную попытку, однократную добычу и подпись, запрет обыска снаружи/издалека, восстановление содержимого при перезапуске сцены, отключение рендера стены внутри, сохранение коллайдера и восстановление рендера при выходе. Проверка пути к четырём деталям и выезду из набора домов также прошла.
 
 Рендер в Direct3D проверен отдельно: мебель и подпись контейнера видны внутри при скрытой стене; другие предметы за пределами текущего сектора обзора остаются скрыты туманом. Инвентарь обыска проверен программно, без отдельного ручного прохождения. Остальные наборы NPC не повторялись, поскольку изменение касается интерьеров и взаимодействия E. Открытый Unity и пользовательские _Recovery сохранены.
+
+## Procedural city validation — 2026-11-08
+
+- The city ground is 100 x 96 units, with nine furnished enterable houses generated from varied plots, sizes and entrances. The garage, shop, required parts and highway remain fixed.
+- Civilian, soldier, medic, marauder, seven city infected and five highway infected receive random starting positions; the patrol pair share a nearby connected route.
+- Generation and connectivity checks passed for an unpinned run and 17 pinned seeds. They check house entrances, collision-free placement, NPC positions, objectives, patrol routes and F5 regeneration. These sampled seeds do not prove every possible seed.
+- On the final Windows build, procedural checks passed for a fresh run and 12 additional seeds; the long-distance marauder search passed twice, shot-intent checks passed on four seeds, and the prototype smoke checks passed. Earlier full gameplay and interior suites passed before the final marauder travel-time adjustment.
+- A top-down visual preview was inspected with fog disabled for the preview only; no WebGL or performance benchmark was performed.

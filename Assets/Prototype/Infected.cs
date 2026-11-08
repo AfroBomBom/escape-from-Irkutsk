@@ -53,7 +53,7 @@ namespace IrkutskPrototype
             var open=new List<Vector2Int>{start}; var came=new Dictionary<Vector2Int,Vector2Int>();
             var cost=new Dictionary<Vector2Int,int>{{start,0}};
             Vector2Int[] steps={Vector2Int.up,Vector2Int.down,Vector2Int.left,Vector2Int.right};
-            int budget=1800;
+            int budget=12000;
             while(open.Count>0 && budget-->0)
             {
                 int best=0; float score=float.MaxValue;
@@ -68,7 +68,7 @@ namespace IrkutskPrototype
                 foreach(var step in steps)
                 {
                     var next=current+step;
-                    if(next.x<-30 || next.x>117 || next.y<-24 || next.y>24) continue;
+                    if(!WorldMapBounds.ContainsGrid(next.x,next.y)) continue;
                     if(Physics.CheckBox(Point(next)+Vector3.up,new Vector3(.48f,.65f,.48f),Quaternion.identity,EscapeGame.SolidMask)) continue;
                     int c=cost[current]+1;
                     if(cost.TryGetValue(next,out int old) && old<=c) continue;

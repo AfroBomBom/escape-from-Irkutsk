@@ -5,7 +5,7 @@ namespace IrkutskPrototype
     {
         public static bool Walkable(Vector3 p)
         {
-            if(p.x< -29.5f || p.x>115 || Mathf.Abs(p.z)>23.5f || (p.x>31 && Mathf.Abs(p.z)>6.1f)) return false;
+            if(p.x< -66.5f || p.x>115 || Mathf.Abs(p.z)>46.5f || (p.x>31 && Mathf.Abs(p.z)>6.1f)) return false;
             return !Physics.CheckBox(p+Vector3.up,new Vector3(.4f,.7f,.4f),Quaternion.identity,EscapeGame.SolidMask);
         }
         public static bool ClearStep(Vector3 origin,Vector3 point)

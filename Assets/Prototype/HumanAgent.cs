@@ -24,10 +24,9 @@ namespace IrkutskPrototype
         float searchUntil,shotAt,healAt,scanTime,bindTime,routeAt,pauseUntil,stunnedUntil,coverTime,ignoreUntil;
         Transform ignored;
         int waypoint;
-        static readonly Vector3[] PatrolPoints={new Vector3(23,0,8),new Vector3(20,0,12),new Vector3(0,0,10),new Vector3(-16,0,0),new Vector3(-1,0,-10),new Vector3(20,0,-8),new Vector3(27,0,1)};
         void Awake()
         { controller=GetComponent<CharacterController>(); if(!GetComponent<ShotReactionZone>()) gameObject.AddComponent<ShotReactionZone>(); }
-        void Start() { home=transform.position; waypoint=Role==HumanRole.Soldier?1:0; }
+        void Start() { home=transform.position; waypoint=0; }
         void LateUpdate() { if(Caption) { Caption.transform.rotation=Quaternion.Euler(65,0,0); if(!Downed) Caption.text=name+": "+State+(IsIncapacitated?" "+BleedoutRemaining.ToString("F0")+" с":""); } }
         public void Hit(float damage,bool playerCaused=true,Transform attacker=null)
         {
@@ -71,8 +70,9 @@ namespace IrkutskPrototype
         {
             State="Обход";
             if(Time.time<pauseUntil) { transform.Rotate(0,35*Time.deltaTime,0); return; }
-            Vector3 goal=PatrolPoints[waypoint];
-            if(Vector3.Distance(transform.position,goal)<1.2f) { waypoint=(waypoint+1)%PatrolPoints.Length; pauseUntil=Time.time+1.2f; return; }
+            if(Game.PatrolRoute==null || Game.PatrolRoute.Length==0) return;
+            Vector3 goal=Game.PatrolRoute[waypoint%Game.PatrolRoute.Length];
+            if(Vector3.Distance(transform.position,goal)<1.2f) { waypoint=(waypoint+1)%Game.PatrolRoute.Length; pauseUntil=Time.time+1.2f; return; }
             MoveTo(goal);
         }
         void Update()
@@ -115,6 +115,7 @@ namespace IrkutskPrototype
                     Select("Выбрать задачу",
                         When("Можно спасти напарника",CanRescue,Run("Подойти и поднять",RescuePartner)),
                         When("Прикрыть спасение",ShouldGuardRescue,Run("Прикрывать врача",GuardRescue)),
+                        When("Ожидать помощи раненому",WaitingForCasualtyRescue,Run("Наблюдать за раненым",WaitForCasualtyRescue)),
                         When("Солдат прикрывает задержание",ShouldGuardCapture,Run("Прикрывать врача",GuardCapture)),
                         When("Солдат задерживает без врача",CanSoldierRestrain,Run("Подойти и связать цель",RestrainSoloTarget)),
                         When("Попал дротиком: связать",CanRestrainDartPatient,Run("Подойти и связать",RestrainDartPatient)),

@@ -117,7 +117,7 @@ namespace IrkutskPrototype
         void Run(EscapeGame game)
         {
             BehaviorTreeChecks.Verify();
-            Check(game.Parts.Count==4 && game.Zombies.Count==8,"world and actors spawned");
+            Check(game.Parts.Count==4 && game.Zombies.Count==12,"world and actors spawned");
             foreach(var enemy in game.Zombies) enemy.enabled=false;
             foreach(var human in game.Humans) human.enabled=false;
             CombatChecks.Run(game);
@@ -130,6 +130,8 @@ namespace IrkutskPrototype
             Check(!game.Fog.IsExplored(new Vector3(90,0,0)),"unvisited highway is unknown");
             Teleport(game,new Vector3(20,0,-10)); game.Hero.forward=Vector3.right; game.Fog.Refresh();
             Check(game.Fog.IsExplored(remembered) && !game.Fog.IsVisible(remembered),"departed ground remains explored but not visible");
+            var hiddenZombie=game.Zombies[0].transform; var hiddenController=hiddenZombie.GetComponent<CharacterController>();
+            hiddenController.enabled=false; hiddenZombie.position=game.Hero.position+Vector3.left*3; hiddenController.enabled=true; Physics.SyncTransforms(); game.Fog.Refresh();
             Check(!game.Zombies[0].GetComponentInChildren<Renderer>().enabled,"offscreen infected hidden");
             Check(!game.Parts[0].GetComponent<Renderer>().enabled,"offscreen loot hidden");
             Teleport(game,new Vector3(4,0,3)); game.Hero.forward=Vector3.forward; game.Fog.Refresh();

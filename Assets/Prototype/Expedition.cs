@@ -29,10 +29,6 @@ namespace IrkutskPrototype
         string ItemName(int k) => k<4?partNames[k]:k==4?"Лекарство":"Бронепластина";
         void BuildExpedition()
         {
-            Citizen=SpawnHuman("Житель",HumanRole.Civilian,new Vector3(-6,0,-13),blue);
-            Medic=SpawnHuman("Врач",HumanRole.Medic,new Vector3(24,0,4),snow);
-            Soldier=SpawnHuman("Солдат",HumanRole.Soldier,new Vector3(23,0,6),dark);
-            SpawnHuman("Мародёр",HumanRole.Marauder,new Vector3(18,0,-8),red);
             Label("КАРАНТИН",new Vector3(27,.2f,17),Color.white,.22f);
             Box("Shop floor",new Vector3(-8,.02f,2),new Vector3(5,.08f,5),dark,false);
             Wall(new Vector3(-10.5f,1.5f,2),new Vector3(.3f,3,5));
@@ -46,6 +42,7 @@ namespace IrkutskPrototype
             ExtraItems[ExtraItems.Count-1].gameObject.SetActive(false);
             SpawnExtra("Бронепластина",5,new Vector3(-1,.4f,-16),steel,false);
             Change(0,0,"Начало теста: 60 ₽. Счётчики действуют в пределах забега.");
+            BuildRandomHumans();
         }
         public HumanAgent SpawnHuman(string name,HumanRole role,Vector3 position,Material clothing)
         {

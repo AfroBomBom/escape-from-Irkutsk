@@ -23,7 +23,7 @@ namespace IrkutskPrototype
         {
             h.gameObject.SetActive(true); h.enabled=true; Place(h.transform,p);
             Set(h,"<CurrentTarget>k__BackingField",null); Set(h,"<Health>k__BackingField",100f);
-            Set(h,"shotAt",0f); Set(h,"tacticsAt",0f); Set(h,"stunnedUntil",0f);
+            Set(h,"shotAt",0f); Set(h,"tacticsAt",0f); Set(h,"stunnedUntil",0f); Set(h,"lastDamageAt",-1000f); Set(h,"searchUntil",0f);
         }
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Install()
@@ -63,8 +63,14 @@ namespace IrkutskPrototype
             Isolate(game);
             Human(game.Soldier,new Vector3(20,0,4)); game.Soldier.enabled=false; Set(game.Soldier,"<Health>k__BackingField",40f);
             Human(game.Medic,new Vector3(20,0,0)); Set(game.Medic,"healAt",0f);
-            yield return new WaitForSeconds(1.5f);
-            Check(Vector3.Distance(game.Medic.transform.position,game.Soldier.transform.position)<3 && game.Soldier.Health>40,"medic approaches injured partner and heals in range");
+            int hitsBeforeTreatment=game.HealingDartsHit;
+            bool treated=false; float treatmentDeadline=Time.time+2;
+            while(Time.time<treatmentDeadline && !treated)
+            {
+                treated=game.Soldier.Health>40 && game.HealingDartsHit>hitsBeforeTreatment;
+                yield return null;
+            }
+            Check(treated,"medic heals injured partner using an actual healing dart");
 
             Isolate(game);
             Human(game.Soldier,new Vector3(20,0,0)); Human(game.Medic,new Vector3(20,0,-2)); Set(game.Medic,"shotAt",Time.time+100);

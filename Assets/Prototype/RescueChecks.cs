@@ -68,8 +68,9 @@ namespace IrkutskPrototype
             soldier.MoveTo(new Vector3(24,0,4)); soldier.AlertTo(game.Hero); Call(soldier,"Update");
             Check(soldier.transform.position==origin && !soldier.CurrentTarget && game.SoldierTracers==shots,"incapacitated actor cannot move, acquire reports or fire");
             Check(!game.Alive(soldier.transform),"armed NPC target selection excludes incapacitated enemies");
-            medic.enabled=true;
+            Vector3 medicBeforeWait=medic.transform.position; medic.enabled=true;
             yield return new WaitForSeconds(.5f);
+            Check(Vector3.Distance(medic.transform.position,medicBeforeWait)<.2f && medic.State=="Ожидаю возможности помочь","medic stays with known casualty during the short safety delay");
             Check(!medic.RescuePatient,"fresh damage prevents an immediate rescue attempt");
             Check(soldier.BleedoutRemaining<30 && soldier.BleedoutRemaining>28,"bleeding countdown advances in real time");
             yield return new WaitForSeconds(2.8f);

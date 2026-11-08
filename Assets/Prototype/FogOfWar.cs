@@ -6,8 +6,8 @@ namespace IrkutskPrototype
     // A new component/texture is created on every run, so exploration never leaks across restarts.
     public sealed class FogOfWar : MonoBehaviour
     {
-        const int Width=156, Height=56;
-        static readonly Vector2 Origin=new Vector2(-34,-28);
+        const int Width=193, Height=102;
+        static readonly Vector2 Origin=new Vector2(-71,-51);
         static readonly Color Darkness=new Color(.025f,.035f,.05f,1);
         readonly Color32[] pixels=new Color32[Width*Height];
         readonly List<Group> groups=new List<Group>();
@@ -82,14 +82,21 @@ namespace IrkutskPrototype
             if(game==null || map==null) return;
             for(int i=0;i<pixels.Length;i++) pixels[i].g=0;
             Vector3 eye=ActorPosture.Eye(game.IsDriving?game.Car:game.Hero);
-            float radius=Sight.HeroRange;
+            Vector3 forward=game.IsDriving?game.Car.forward:game.Hero.forward; forward.y=0; forward.Normalize();
+            float personal=game.IsDriving?2.2f:1.5f;
+            float cosine=Mathf.Cos(Sight.HeroAngle*.5f*Mathf.Deg2Rad);
             // The map bounds limit iteration; the viewer has no distance cutoff.
             int minX=0, maxX=Width-1, minZ=0, maxZ=Height-1;
             for(int z=minZ;z<=maxZ;z++) for(int x=minX;x<=maxX;x++)
             {
                 Vector3 destination=new Vector3(Origin.x+x+.5f,eye.y,Origin.y+z+.5f);
-                Vector3 delta=destination-eye; float distance=delta.magnitude;
-                if(distance>(game.IsDriving?2.2f:1.5f) && !Sight.InCone(eye,game.IsDriving?game.Car.forward:game.Hero.forward,destination,radius,Sight.HeroAngle)) continue;
+                Vector3 delta=destination-eye; float squared=delta.sqrMagnitude;
+                if(squared>personal*personal)
+                {
+                    float dot=Vector3.Dot(forward,delta);
+                    if(dot<0 || dot*dot<squared*cosine*cosine) continue;
+                }
+                float distance=Mathf.Sqrt(squared);
                 // Reveal the front surface of a wall, but not rooms behind it.
                 bool blocked=distance>.01f && Physics.Raycast(eye,delta.normalized,out var hit,distance,EscapeGame.SolidMask) && hit.distance<distance-.7f;
                 if(!blocked) pixels[z*Width+x]=new Color32(255,255,0,255);

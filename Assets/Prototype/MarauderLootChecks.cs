@@ -149,6 +149,15 @@ namespace IrkutskPrototype
             game.AcceptQuest(); Place(game.Hero,game.Citizen.transform.position);
             Check(game.DeliverMedicine(),"medicine recovered from marauder still completes civilian quest");
 
+            Reset(); Place(game.Hero,new Vector3(25,0,-22)); Place(looter.transform,new Vector3(-60,0,-42));
+            yield return null; looter.enabled=true; yield return null;
+            int startingArea=(int)Get(looter,"lootArea");
+            var areas=(Vector3[])typeof(HumanAgent).GetField("LootAreas",BindingFlags.Static|BindingFlags.NonPublic).GetValue(null);
+            float startDistance=Vector3.Distance(looter.transform.position,areas[startingArea]);
+            yield return new WaitForSeconds(19);
+            Check((int)Get(looter,"lootArea")==startingArea && Vector3.Distance(looter.transform.position,areas[startingArea])<startDistance-5,
+                "marauder spawned in the enlarged district keeps moving towards a distant search area beyond sixteen seconds");
+
             Reset(); yield return null; looter.enabled=true;
             var parts=new WorldLoot[4];
             for(int i=0;i<4;i++) parts[i]=Part(i,new Vector3(20+(i%2)*.4f,.45f,1+(i/2)*.3f));

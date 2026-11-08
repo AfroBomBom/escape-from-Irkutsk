@@ -8,7 +8,7 @@ namespace IrkutskPrototype
         {
             var result=new Queue<Vector3>(); Vector2Int start=Cell(origin),end=Cell(goal);
             var open=new List<Vector2Int>{start}; var cost=new Dictionary<Vector2Int,int>{{start,0}};
-            var parent=new Dictionary<Vector2Int,Vector2Int>(); int budget=2200;
+            var parent=new Dictionary<Vector2Int,Vector2Int>(); int budget=12000;
             Vector2Int[] directions={Vector2Int.up,Vector2Int.right,Vector2Int.down,Vector2Int.left};
             while(open.Count>0 && budget-->0)
             {
@@ -23,7 +23,7 @@ namespace IrkutskPrototype
                 foreach(var d in directions)
                 {
                     var next=current+d;
-                    if(next.x<-30 || next.x>116 || next.y<-24 || next.y>24) continue;
+                    if(!WorldMapBounds.ContainsGrid(next.x,next.y)) continue;
                     if(Physics.CheckBox(Point(next)+Vector3.up,new Vector3(.42f,.65f,.42f),Quaternion.identity,EscapeGame.SolidMask)) continue;
                     int c=cost[current]+1; if(cost.TryGetValue(next,out int old) && old<=c) continue;
                     parent[next]=current; cost[next]=c; if(!open.Contains(next)) open.Add(next);

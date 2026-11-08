@@ -48,8 +48,8 @@ namespace IrkutskPrototype
             foreach(var z in game.Zombies) { z.enabled=false; z.gameObject.SetActive(false); }
             Physics.SyncTransforms();
             var names=new[]{"Small house","Medium house","Large house"};
-            var outside=new[]{new Vector3(-22,0,17.5f),new Vector3(-2,0,-17),new Vector3(26,0,-16.5f)};
-            var inside=new[]{new Vector3(-22,0,21),new Vector3(-2,0,-21),new Vector3(26,0,-21)};
+            var outside=new Vector3[3]; var inside=new Vector3[3];
+            for(int i=0;i<3;i++) { var h=game.GeneratedHouses.Find(v=>v.Name==names[i]); outside[i]=h.OutsideDoor; inside[i]=h.InsideDoor; }
             for(int i=0;i<names.Length;i++)
             {
                 var floor=GameObject.Find(names[i]+" floor"); var back=GameObject.Find(names[i]+" back");
@@ -67,10 +67,12 @@ namespace IrkutskPrototype
             var large=GameObject.Find("Large house floor").transform.localScale;
             Check(small.x*small.z<medium.x*medium.z && medium.x*medium.z<large.x*large.z,"houses provide three distinct floor areas");
             Check(GameObject.Find("Small house back").transform.localScale.y<GameObject.Find("Large house back").transform.localScale.y,"houses also differ in wall height");
-            Vector3 inSmall=new Vector3(-22,0,21),eastOutside=new Vector3(-18,0,21);
+            var smallHouse=game.GeneratedHouses.Find(h=>h.Name=="Small house");
+            Vector3 inSmall=smallHouse.Center,eastOutside=smallHouse.Center+Vector3.right*(smallHouse.Width/2+1.75f);
             Check(Physics.Linecast(inSmall+Vector3.up,eastOutside+Vector3.up,EscapeGame.SolidMask),"house walls block direct sight");
             Check(!(bool)Call(game,"PlayerNoiseReaches",inSmall,eastOutside,8f),"house wall attenuates player noise across it");
-            Check((bool)Call(game,"PlayerNoiseReaches",new Vector3(-22,0,20),new Vector3(-22,0,17),8f),"noise passes through an open doorway without attenuation");
+            Vector3 inDoor=smallHouse.Center-Vector3.forward*smallHouse.BackSign*1.5f;
+            Check((bool)Call(game,"PlayerNoiseReaches",inDoor,smallHouse.OutsideDoor,8f),"noise passes through an open doorway without attenuation");
             foreach(var part in game.Parts)
                 Check(GridRoute.Find(new Vector3(-9,0,-10),part.transform.position).Count>0,"repair part "+part.Kind+" remains reachable from garage area");
             Check(GridRoute.Find(new Vector3(-9,0,-10),new Vector3(29,0,0)).Count>0,"route to city exit remains reachable");

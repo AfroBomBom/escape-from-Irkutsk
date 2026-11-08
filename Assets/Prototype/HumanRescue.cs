@@ -109,6 +109,19 @@ namespace IrkutskPrototype
             }
             return true;
         }
+        bool WaitingForCasualtyRescue()
+        {
+            return IsPatrol && knownCasualty && knownCasualty.IsIncapacitated && knownCasualty.gameObject.activeInHierarchy
+                && !knownCasualty.Rescuer && Time.time<casualtyUntil && Vector3.Distance(transform.position,casualtyPoint)<12
+                && Vector3.Distance(knownCasualty.transform.position,casualtyPoint)<.5f
+                && (!CurrentTarget || !Game.Threat(CurrentTarget));
+        }
+        void WaitForCasualtyRescue()
+        {
+            State="Ожидаю возможности помочь";
+            Vector3 direction=casualtyPoint-transform.position; direction.y=0;
+            if(direction.sqrMagnitude>.01f) transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(direction),90*Time.deltaTime);
+        }
         bool CanRescue()
         {
             if(!IsPatrol || Downed || IsIncapacitated || IsDetained) return false;

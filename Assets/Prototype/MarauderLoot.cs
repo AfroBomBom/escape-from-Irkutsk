@@ -104,6 +104,7 @@ namespace IrkutskPrototype
             }
             CancelLoot();
         }
+        float LootAreaDeadline(Vector3 goal) => Time.time+Mathf.Max(16,Vector3.Distance(transform.position,goal)/1.7f*2+5);
         void ExploreLootArea()
         {
             State="Обыскиваю дворы";
@@ -112,14 +113,14 @@ namespace IrkutskPrototype
                 float nearest=float.MaxValue;
                 for(int i=0;i<LootAreas.Length;i++)
                 { float d=Vector3.Distance(transform.position,LootAreas[i]); if(d<nearest) { nearest=d; lootArea=i; } }
-                lootArriveUntil=Time.time+16;
+                lootArriveUntil=LootAreaDeadline(LootAreas[lootArea]);
             }
             Vector3 goal=LootAreas[lootArea];
             if(Vector3.Distance(transform.position,goal)<1.2f || Time.time>lootArriveUntil)
             {
                 if(lootInspectUntil<=0) lootInspectUntil=Time.time+2;
                 if(Time.time<lootInspectUntil) { State="Осматриваю двор"; transform.Rotate(0,90*Time.deltaTime,0); return; }
-                lootArea=(lootArea+1)%LootAreas.Length; lootInspectUntil=0; lootArriveUntil=Time.time+16;
+                lootArea=(lootArea+1)%LootAreas.Length; lootInspectUntil=0; lootArriveUntil=LootAreaDeadline(LootAreas[lootArea]);
             }
             MoveTo(LootAreas[lootArea],1,1.7f);
         }
